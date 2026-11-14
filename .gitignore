@@ -1,0 +1,19 @@
+node_modules
+.next
+.vercel
+.env
+.env.local
+*.log
+.DS_Store
+.frame-token
+.env*
+
+.members.txt
+.members_env
+.env.local
+
+# the kiosk build output lives in public/app, which a release step regenerates
+frame-app/dist
+public/app
+public/app.bak.*
+tsconfig.tsbuildinfo

@@ -1,0 +1,76 @@
+/* Ambient (idle photo frame) — paper palette, matching the day UI.
+   The photo shows faintly at the top; the lower half fades to paper so the
+   clock stays readable on any image. */
+.ambient { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 65; background: var(--paper); display: none; color: var(--ink); cursor: pointer; }
+.stage[data-mode="ambient"] .ambient { display: block; }
+.amb-stage { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+.amb-scrim { position: absolute; left: 0; right: 0; bottom: 0; top: 0; background: linear-gradient(0deg, #F2EEE6 0%, #F2EEE6 42%, rgba(242, 238, 230, .9) 68%, rgba(242, 238, 230, .45) 100%); pointer-events: none; }
+.amb-info { position: absolute; left: 60px; right: 60px; bottom: 48px; display: flex; justify-content: space-between; align-items: flex-end; }
+.amb-time { font-size: 230px; line-height: .78; letter-spacing: -.04em; }
+.amb-date { font-family: var(--serif); font-size: 38px; margin-top: 16px; }
+.amb-right { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+.amb-wx { display: flex; align-items: center; gap: 12px; }
+.amb-wx .num { font-size: 72px; line-height: .8; }
+.amb-wx small { font-family: var(--serif); font-size: 26px; font-style: italic; max-width: 220px; line-height: 1.05; }
+.amb-next {
+  display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 20px; border-radius: 999px;
+  background: rgba(17, 17, 17, .08);
+  font-size: 20px; font-weight: 700;
+}
+.amb-next i { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px #F2EEE6; }
+.amb-who { display: flex; gap: 8px; }
+.amb-who .avatar--away { background: rgba(17, 17, 17, .10); }
+
+/* Night (dim red clock) — kept above a minimum readable brightness */
+.night { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 66; background: #000; display: none; place-items: center; cursor: pointer; }
+.stage[data-mode="night"] .night { display: grid; }
+.nt-inner { text-align: center; color: #B8281A; }
+.nt-time { font-size: 260px; line-height: .8; letter-spacing: -.04em; color: #C22C1C; }
+.nt-line { margin-top: 34px; font-size: 26px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #A02618; }
+.nt-line b { color: #C22C1C; }
+.nt-lock { margin-top: 18px; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #7A1D12; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+
+/* A literary line instead of a fake security status. Dim enough for 3 a.m. */
+.nt-quote {
+  margin-top: 34px;
+  max-width: 860px;
+  padding: 0 20px;
+}
+.nt-q {
+  display: block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 27px;
+  line-height: 1.38;
+  color: #9A2417;
+}
+.nt-q-by {
+  display: block;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6E1A10;
+}
+
+/* Day overlay: a caption under the date, dark on the cream scrim. */
+.amb-quote { margin-top: 20px; max-width: 540px; }
+.amb-q {
+  display: block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.34;
+  color: #2E2C28;
+  opacity: .88;
+}
+.amb-q-by {
+  display: block;
+  margin-top: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mute);
+}

@@ -1,0 +1,27 @@
+/* ---------------------------------------------------------------
+   PENDING FEATURES — hidden until there is real data behind them.
+   Nothing here is deleted: remove a line to bring the feature back.
+
+   Hidden today:
+     rail  Photos, Home control, Agents
+     home  photo strip, home-status card  (the to-do card is real now)
+
+   Still live: Today, Calendar, Shopping, presence, next-up, weather.
+   --------------------------------------------------------------- */
+
+/* rail navigation */
+.rail-item[data-go="photos"],
+.rail-item[data-go="control"],
+.rail-item[data-go="agents"] { display: none !important; }
+
+/* home cards with mock data */
+.h-photo,
+.h-status { display: none !important; }
+
+/* presence: keep the names, drop the invented status / ETA / "At the office" */
+.h-who small { display: none !important; }
+
+/* the side column now holds only the real shopping card, sized to its content */
+.h-side { grid-template-rows: 176px auto !important; align-content: start !important; }
+.h-duo { display: block !important; }
+.h-shop { min-height: 0 !important; }
