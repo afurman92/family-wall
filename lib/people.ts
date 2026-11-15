@@ -18,7 +18,7 @@ export const FAMILY: Person = { id: "family", name: "Family", colour: "#111111" 
 export const CALENDAR_LANES: Record<string, string> = {
   Family: "all",
   Personal: "alex",
-  Outlook: "alex",
+  Outlook: "jordan",   // a partner's work calendar
   Partner: "jordan",
 };
 
