@@ -156,7 +156,10 @@
       var soccer = App.timedOn(App.now()).filter(function (e) { return /soccer/i.test(e.title) && e.start > App.now(); })[0];
       advice = soccer ? 'Pack a rain jacket for soccer' : 'Grab a rain jacket';
     } else {
-      summary = W.t[h] < 12 ? 'Clear and cool' : 'Dry all day';
+      // The sentence has to agree with the icon: saying "Clear and cool" under an
+      // OVERCAST badge is the kind of small lie that erodes trust in the whole screen.
+      var sums = { sun: 'Sunny', moon: 'Clear', partly: 'Sun and cloud', cloud: 'Overcast', rain: 'Rain', snow: 'Snow' };
+      summary = (sums[W.c[h]] || 'Dry') + (W.t[h] < 12 ? ' and cool' : '');
       advice = W.t[h] < 12 ? 'Jacket weather' : 'Light layers';
     }
     var labels = { sun: 'Sunny', moon: 'Clear', partly: 'Partly cloudy', cloud: 'Overcast', rain: 'Rain' };
