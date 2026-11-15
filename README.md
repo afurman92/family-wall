@@ -6,47 +6,61 @@ Google Keep and three paper lists with one screen in the kitchen.
 Two pieces, one database:
 
 ```
-┌──────────────────────────┐        ┌───────────────────────────┐
-│  Android tablet on wall  │        │  Next.js dashboard         │
-│  frame-app/ (vanilla JS) │        │  /  /calendar  /air-fryer │
-│  read-only token         │        │  password protected        │
-└────────────┬─────────────┘        └─────────────┬─────────────┘
-             │  GET only                          │  read + write
-             └───────────────┬────────────────────┘
-                             ▼
-                    ┌──────────────────┐
-                    │  Postgres        │
-                    │  items, recipes, │
-                    │  air fryer, docs │
-                    └──────────────────┘
+┌──────────────────────────┐        ┌────────────────────────────────────┐
+│  Android tablet on wall  │        │  Next.js dashboard                  │
+│  frame-app/ (vanilla JS) │        │  /  /calendar  /chores  /air-fryer  │
+│  read-only token         │        │  /documents   password protected    │
+└────────────┬─────────────┘        └───────────────┬────────────────────┘
+             │  GET only                            │  read + write
+             └──────────────────┬───────────────────┘
+                                ▼
+                     ┌────────────────────┐
+                     │  Postgres          │
+                     │  items, chores,    │
+                     │  recipes, air fryer│
+                     │  documents, plants │
+                     └────────────────────┘
 ```
 
 ## What it does
 
 **On the wall (800×1280, touch):**
-- Today: agenda, weather, to-dos, shopping count, plants that need water
+- Today: agenda, weather, to-dos, shopping count, and — when a document is expired or about to
+  expire — an **expiry panel that takes the photo's place**
 - Calendar: month grid, swipeable
-- Chores and To do, kept separate on purpose
-- Shopping list with categories, tap to check
+- Chores: one lane per person, scoped to morning / afternoon / evening, with a ring per lane.
+  Read-only — the wall shows, the web edits
+- To do, kept separate from chores on purpose
+- Shopping list, tap to check
 - Recipes that **scale** — tap 2 / 4 / 6 / 8 and every ingredient and step follows, including
   fractions, ranges (*"6 a 8 cucharadas"*) and unit conversion
 - Air fryer cheat sheet: ingredient, mode, portion, time, temperature — one glance from the counter
 - Screensaver that is a photo frame by day and **pure black with a dim clock and a literary
   quote after sunset**
 
-**On the web:** the same data in a bigger layout, with urgency buckets (Overdue / Today /
-Tomorrow / This week), a month calendar, document expiry search, and forms for everything.
+**On the web:** the same data in a bigger layout — a composer for tasks and another for shopping,
+chores with frequency, documents with an owner and an upload for the scan, a month calendar with a
+**colour legend** (family vs. each person), and urgency buckets (Overdue / Today / Tomorrow / This
+week).
 
 ## Design decisions worth stealing
 
 - **The wall is read-only.** Its token lives in a URL that anyone standing there can read. So it
-  can only `GET`, and the allowlist is in `middleware.ts`.
+  can only `GET`, and the allowlist is in `middleware.ts`. Chores are a reading on the wall for the
+  same reason: a checkbox that cannot save is worse than no checkbox.
+- **"Done" lasts the period, not the day.** A daily chore is done until tomorrow, a weekly one
+  until Monday, a monthly one until the 1st. That is the whole difference between a chore and a
+  task, and it lives in one `CASE` in `listChores()`.
 - **Cooking screens never time out.** Recipes and the air fryer are on a `KEEP` list: the display
   will not jump home while you have raw chicken hands. Everything else does.
 - **Night follows the sun, not the clock.** Sunset comes from the weather payload; the screen goes
   black when it gets dark, not at a fixed hour.
-- **One table for tasks, shopping and notes.** `items.kind` decides which view shows it. Three
-  tables would have been three times the code.
+- **One table for tasks, shopping and notes.** `items.kind` decides which view shows it. Chores got
+  their own table because they repeat and belong to a part of the day — three columns of exceptions
+  in `items` would have been worse.
+- **Colours mean one thing.** A feed maps to a person in `CALENDAR_LANES` (`lib/people.ts`) and in
+  `LANE` (`frame-app/js/live.js`); the legend on `/calendar` is built from the feeds actually
+  configured. Change one, change the other.
 - **The frame is a separate build** (Vite → `public/app`) so redeploying it never touches the
   dashboard, and the old build is kept as `public/app.bak.HHMMSS` for one-second rollback.
 
@@ -74,13 +88,14 @@ charger with the screen always on.
 ```
 app/                 Next.js routes (pages + API)
   api/items          to-dos, shopping, notes
+  api/chores         repeating chores: person, routine, frequency
   api/recipes        recipes + scaling source
   api/air-fryer      table with validated modes
-  api/documents      metadata + authenticated file streaming
+  api/documents      metadata, owner, authenticated file streaming
   api/frame          everything the wall needs, in one payload
   frame/[token]      the wall shell
-components/          dashboard UI
-lib/                 db schema, calendar/ICS, weather
+components/          dashboard UI (ItemsPanel, ChoresEditor, DocumentsEditor, …)
+lib/                 db schema, calendar/ICS, weather, people/colours
 frame-app/           the kiosk (vanilla JS + Vite)
 scripts/             db-tool.js, members.sh (push logins to Vercel)
 AGENTS.md            contract for AI agents working on this repo

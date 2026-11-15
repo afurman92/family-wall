@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     expiringDocuments(120),
   ]);
 
-  // Optional family slot overrides: FAMILY_PEOPLE=[{"id":"alex","name":"Alejandro",...}]
+  // Optional family slot overrides: FAMILY_PEOPLE=[{"id":"alex","name":"Alex",...}]
   let people: unknown = null;
   if (process.env.FAMILY_PEOPLE) {
     try {

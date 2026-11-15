@@ -4,9 +4,9 @@
 export type Person = { id: string; name: string; colour: string };
 
 export const PEOPLE: Person[] = [
-  { id: "alex", name: "Alejandro", colour: "#2D5BFF" },
-  { id: "jordan", name: "Hellen", colour: "#E4007C" },
-  { id: "maya", name: "Alan", colour: "#00A36C" },
+  { id: "alex", name: "Alex", colour: "#2D5BFF" },
+  { id: "jordan", name: "Jordan", colour: "#E4007C" },
+  { id: "maya", name: "Maya", colour: "#00A36C" },
 ];
 
 export const ANY: Person = { id: "any", name: "Cualquiera", colour: "#7A756B" };
@@ -19,7 +19,7 @@ export const CALENDAR_LANES: Record<string, string> = {
   Family: "all",
   Personal: "alex",
   Outlook: "alex",
-  Hellen: "jordan",
+  Partner: "jordan",
 };
 
 export function calendarMeta(feed: string): { label: string; colour: string } {

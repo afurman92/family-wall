@@ -133,7 +133,7 @@ function feeds(): { url: string; name: string }[] {
     { env: "GOOGLE_ICAL_URL", name: "Family" },
     { env: "GOOGLE_ICAL_URL_2", name: "Personal" },
     { env: "OUTLOOK_ICAL_URL", name: "Outlook" },
-    { env: "GOOGLE_ICAL_URL_3", name: "Hellen" },
+    { env: "GOOGLE_ICAL_URL_3", name: "Partner" },
   ];
   const out: { url: string; name: string }[] = [];
   for (const s of specs) {
