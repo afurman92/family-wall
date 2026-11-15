@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getEvents, type CalEvent } from "../../lib/calendar";
+import { calendarMeta } from "../../lib/people";
 import Shell from "../../components/Shell";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,14 @@ export default async function CalendarPage({
 
   const title = first.toLocaleDateString("en-CA", { month: "long", year: "numeric" });
 
+  // One legend row: which feed is whose. Deduped, because two of the feeds can
+  // point at the same person.
+  const legend: { label: string; colour: string }[] = [];
+  for (const f of cal.feeds) {
+    const m = calendarMeta(f);
+    if (!legend.some((l) => l.label === m.label)) legend.push(m);
+  }
+
   return (
     <div className="shell">
       <Shell active="calendar" />
@@ -69,6 +78,17 @@ export default async function CalendarPage({
           <Link href={`/calendar?m=${ym(next)}`}>→</Link>
         </div>
       </div>
+
+      {legend.length > 0 && (
+        <div className="cal-legend">
+          {legend.map((l) => (
+            <span key={l.label}>
+              <i className="lg-dot" style={{ background: l.colour }} />
+              {l.label}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="cal">
         <div className="cal-dows">
@@ -95,7 +115,12 @@ export default async function CalendarPage({
                 {shown.map((e, j) => {
                   const busy = e.title.trim().toLowerCase() === "busy";
                   return (
-                    <span className={"cal-ev" + (busy ? " is-busy" : "")} key={j} title={e.title}>
+                    <span
+                      className={"cal-ev" + (busy ? " is-busy" : "")}
+                      key={j}
+                      title={e.title}
+                      style={{ borderLeftColor: calendarMeta(e.calendar).colour }}
+                    >
                       {e.allDay ? "" : new Date(e.start).toLocaleTimeString("en-CA", { timeZone: TZ, hour: "numeric", minute: "2-digit" }) + " "}
                       {e.title}
                     </span>
@@ -128,7 +153,10 @@ export default async function CalendarPage({
                           ? "All day"
                           : new Date(e.start).toLocaleTimeString("en-CA", { timeZone: TZ, hour: "numeric", minute: "2-digit" })}
                       </time>
-                      <span className={e.title.trim().toLowerCase() === "busy" ? "muted" : ""}>{e.title}</span>
+                      <span className={e.title.trim().toLowerCase() === "busy" ? "muted" : ""}>
+                        <i className="lg-dot" style={{ background: calendarMeta(e.calendar).colour }} />
+                        {e.title}
+                      </span>
                     </div>
                   ))}
                 </div>

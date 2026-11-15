@@ -6,6 +6,7 @@ import ItemsPanel from "../components/ItemsPanel";
 import DocumentsPanel from "../components/DocumentsPanel";
 import Shell from "../components/Shell";
 import WeekStrip from "../components/WeekStrip";
+import { calendarMeta } from "../lib/people";
 
 export const dynamic = "force-dynamic";
 
@@ -158,6 +159,7 @@ export default async function Home() {
                         {timeOf(new Date(e.start), !!e.allDay)}
                       </span>
                       <span className="evt" style={{ fontSize: 14.5 }}>
+                        <i className="lg-dot" style={{ background: calendarMeta(e.calendar).colour }} />
                         {e.title}
                       </span>
                     </div>
@@ -176,7 +178,7 @@ export default async function Home() {
           )}
 
           <section className="block">
-            <ItemsPanel kinds={["shop", "note"]} composer={false} />
+            <ItemsPanel kinds={["shop", "note"]} />
           </section>
 
           {docs.length > 0 && <DocumentsPanel docs={docs} />}

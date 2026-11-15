@@ -133,6 +133,7 @@ function feeds(): { url: string; name: string }[] {
     { env: "GOOGLE_ICAL_URL", name: "Family" },
     { env: "GOOGLE_ICAL_URL_2", name: "Personal" },
     { env: "OUTLOOK_ICAL_URL", name: "Outlook" },
+    { env: "GOOGLE_ICAL_URL_3", name: "Hellen" },
   ];
   const out: { url: string; name: string }[] = [];
   for (const s of specs) {
@@ -148,11 +149,13 @@ function feeds(): { url: string; name: string }[] {
 export async function getEvents(limit = 8, days = 14, backDays = 0): Promise<{
   events: CalEvent[];
   configured: boolean;
+  feeds: string[];
   errors: { calendar: string; error: string }[];
 }> {
   const list = feeds();
   const errors: { calendar: string; error: string }[] = [];
-  if (list.length === 0) return { events: [], configured: false, errors };
+  const names = list.map((f) => f.name);
+  if (list.length === 0) return { events: [], configured: false, feeds: [], errors };
 
   const now = Date.now();
   const horizon = now + days * 864e5;
@@ -180,5 +183,5 @@ export async function getEvents(limit = 8, days = 14, backDays = 0): Promise<{
     .sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
     .slice(0, limit);
 
-  return { events, configured: true, errors };
+  return { events, configured: true, feeds: names, errors };
 }

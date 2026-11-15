@@ -840,3 +840,26 @@ a { color: var(--ink); }
   .chore-form > button { grid-column: 1 / -1; width: 100%; }
   .chore-row { grid-template-columns: 24px minmax(0, 1fr) auto; }
 }
+
+/* ============================================================ calendar legend */
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: -6px 0 14px;
+  font-size: 13px;
+  color: var(--mute);
+}
+.cal-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.lg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.cal-legend .lg-dot { margin-right: 0; }
+.cal-ev .lg-dot { margin-right: 4px; width: 6px; height: 6px; }
+.cal-cell.is-today .lg-dot { box-shadow: 0 0 0 1px rgba(255,255,255,.5); }
