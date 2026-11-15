@@ -3,6 +3,7 @@ import Link from "next/link";
 const LINKS = [
   { href: "/", label: "Today", id: "today" },
   { href: "/calendar", label: "Calendar", id: "calendar" },
+  { href: "/chores", label: "Chores", id: "chores" },
   { href: "/air-fryer", label: "Air Fryer", id: "air-fryer" },
   { href: "/documents", label: "Documents", id: "documents" },
 ];
@@ -11,13 +12,13 @@ export default function Shell({
   active,
   dateLine,
 }: {
-  active: "today" | "calendar" | "air-fryer" | "documents";
+  active: "today" | "calendar" | "chores" | "air-fryer" | "documents";
   dateLine?: string;
 }) {
   return (
     <header className="shell-head">
       <Link href="/" className="brand" style={{ textDecoration: "none" }}>
-        Home
+        Familia
       </Link>
       {dateLine ? <div className="shell-date">{dateLine}</div> : null}
       <nav className="nav">
