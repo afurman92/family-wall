@@ -42,7 +42,8 @@ Two pieces, one database:
 chores with frequency, documents with an owner and an upload for the scan, a month calendar with a
 **colour legend** (family vs. each person), and urgency buckets (Overdue / Today / Tomorrow / This
 week). Plus **Dates** — birthdays, anniversaries and one-off dates, each with an optional year so
-the wall can say *turns 35* instead of just *today*.
+the wall can say *turns 35* instead of just *today*, a free-text note for context, and in-place
+editing for the year you learn later.
 
 ## Design decisions worth stealing
 

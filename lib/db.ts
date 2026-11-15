@@ -109,6 +109,7 @@ export async function ensureSchema(): Promise<boolean> {
   // Optional birth year: without it a birthday is just a date; with it the wall
   // can say "turns 35", and an anniversary "12 years".
   await p.query(`ALTER TABLE moments ADD COLUMN IF NOT EXISTS year SMALLINT`);
+  await p.query(`ALTER TABLE moments ADD COLUMN IF NOT EXISTS note TEXT`);
 
   // Recipes carried over from Notion. `body` keeps the original block
   // order so a recipe renders the way it was written, not as flattened text.
@@ -583,6 +584,7 @@ export type Moment = {
   month: number | null;
   day: number | null;
   year: number | null;
+  note: string | null;
   on_date: string | null;
   who: string;
   created_by: string;
@@ -597,7 +599,7 @@ export async function listMoments(): Promise<Moment[]> {
   const p = db();
   if (!p) return [];
   const { rows } = await p.query<Moment>(
-    `SELECT id, title, kind, month, day, year,
+    `SELECT id, title, kind, month, day, year, note,
             to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at
        FROM moments
       ORDER BY COALESCE(month, 0), COALESCE(day, 0), on_date`
@@ -612,23 +614,24 @@ export async function createMoment(m: {
   day?: number | null;
   on_date?: string | null;
   year?: number | null;
+  note?: string | null;
   who?: string;
   created_by: string;
 }): Promise<Moment | null> {
   const p = db();
   if (!p) return null;
   const { rows } = await p.query<Moment>(
-    `INSERT INTO moments (title, kind, month, day, on_date, who, created_by, year)
-     VALUES ($1,$2,$3,$4,$5,COALESCE($6,'any'),$7,$8)
-     RETURNING id, title, kind, month, day, year, to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at`,
-    [m.title, m.kind || "birthday", m.month ?? null, m.day ?? null, m.on_date ?? null, m.who || null, m.created_by, m.year ?? null]
+    `INSERT INTO moments (title, kind, month, day, on_date, who, created_by, year, note)
+     VALUES ($1,$2,$3,$4,$5,COALESCE($6,'any'),$7,$8,$9)
+     RETURNING id, title, kind, month, day, year, note, to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at`,
+    [m.title, m.kind || "birthday", m.month ?? null, m.day ?? null, m.on_date ?? null, m.who || null, m.created_by, m.year ?? null, m.note ?? null]
   );
   return rows[0] ?? null;
 }
 
 export async function updateMoment(
   id: number,
-  patch: Partial<Pick<Moment, "title" | "kind" | "month" | "day" | "year" | "on_date" | "who">>
+  patch: Partial<Pick<Moment, "title" | "kind" | "month" | "day" | "year" | "note" | "on_date" | "who">>
 ): Promise<Moment | null> {
   const p = db();
   if (!p) return null;
@@ -643,13 +646,14 @@ export async function updateMoment(
   if (patch.month !== undefined) put("month", patch.month);
   if (patch.day !== undefined) put("day", patch.day);
   if (patch.year !== undefined) put("year", patch.year);
+  if (patch.note !== undefined) put("note", patch.note);
   if (patch.on_date !== undefined) put("on_date", patch.on_date);
   if (patch.who !== undefined) put("who", patch.who);
   if (!sets.length) return null;
   vals.push(id);
   const { rows } = await p.query<Moment>(
     `UPDATE moments SET ${sets.join(", ")} WHERE id = $${vals.length}
-     RETURNING id, title, kind, month, day, year, to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at`,
+     RETURNING id, title, kind, month, day, year, note, to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at`,
     vals
   );
   return rows[0] ?? null;
@@ -679,7 +683,7 @@ export async function upcomingMoments(withinDays = 30): Promise<UpcomingMoment[]
               END AS next_on
          FROM moments m
      )
-     SELECT id, title, kind, month, day, year,
+     SELECT id, title, kind, month, day, year, note,
             to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at,
             (next_on - CURRENT_DATE) AS days_left,
             EXTRACT(YEAR FROM next_on)::int AS in_year,

@@ -34,7 +34,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
   }
   if ("month" in body) patch.month = body.month === null ? null : Number(body.month);
   if ("day" in body) patch.day = body.day === null ? null : Number(body.day);
-  if ("year" in body) patch.year = body.year === null ? null : Number(body.year);
+  if ("year" in body) patch.year = body.year === null || body.year === "" ? null : Number(body.year);
+  if ("note" in body) patch.note = body.note ? String(body.note).slice(0, 240) : null;
   if ("on_date" in body) patch.on_date = body.on_date || null;
   if (typeof body?.who === "string") patch.who = body.who.slice(0, 40);
 

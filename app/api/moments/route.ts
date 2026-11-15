@@ -91,6 +91,7 @@ export async function POST(req: Request) {
     day,
     on_date: onDate,
     year,
+    note: typeof body?.note === "string" && body.note.trim() ? body.note.trim().slice(0, 240) : null,
     who: typeof body?.who === "string" ? body.who.slice(0, 40) : undefined,
     created_by: who,
   });

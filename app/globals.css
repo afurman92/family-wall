@@ -296,6 +296,22 @@ a { color: var(--ink); }
 }
 .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
 .overdue { color: var(--alert); font-weight: 600; }
+.edit {
+  background: none;
+  border: 0;
+  color: var(--mute);
+  font-size: 15px;
+  padding: 4px 6px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-family: inherit;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.item:hover .edit { opacity: 0.75; }
+.edit:hover { opacity: 1; color: var(--ink); }
+@media (hover: none) { .edit { opacity: 0.55; } }
+
 .del {
   background: none;
   border: 0;
