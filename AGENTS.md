@@ -106,7 +106,8 @@ Restart the Android app after a deploy (`adb shell am force-stop <pkg> && am sta
 
 ## Agent keys
 
-`AGENTS="muse:KEY,other:KEY"` in the environment lets an agent in without the HTTP Basic dialog,
+`AGENTS="muse:KEY,muse-jordan:KEY2"` in the environment lets agents in without the HTTP Basic dialog.
+One key per person, so `created_by` says who acted; the agent must still send `who` for whom.
 which a cloud browser cannot fill. Two doors: `Authorization: Bearer <key>` (or `x-agent-key`)
 for API calls, and `/agent-login?k=<key>` for a browser, which sets a 30-day HttpOnly cookie.
 Writes land as `created_by: <agent>`. Rotate by changing the env var and redeploying.
