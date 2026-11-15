@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getWeather } from "../lib/weather";
 import { getEvents } from "../lib/calendar";
-import { ensureSchema, listDocuments, listPlants } from "../lib/db";
+import { ensureSchema, listDocuments } from "../lib/db";
 import ItemsPanel from "../components/ItemsPanel";
 import DocumentsPanel from "../components/DocumentsPanel";
 import Shell from "../components/Shell";
@@ -28,7 +28,7 @@ function timeOf(d: Date, allDay: boolean): string {
 export default async function Home() {
   const [weather, cal] = await Promise.all([getWeather(), getEvents(80, 14)]);
   await ensureSchema();
-  const [docs, plants] = await Promise.all([listDocuments(), listPlants()]);
+  const docs = await listDocuments();
 
   const now = new Date();
   const todayKey = dayKey(now);
@@ -183,28 +183,6 @@ export default async function Home() {
 
           {docs.length > 0 && <DocumentsPanel docs={docs} />}
 
-          {plants.length > 0 && (
-            <section className="block">
-              <div className="sechead">
-                <h2>Plants</h2>
-                <span className="count">{plants.length}</span>
-              </div>
-              <div className="plants">
-                {plants.map((p) => (
-                  <div className="plant" key={p.id}>
-                    {p.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.image_url} alt={p.name} loading="lazy" />
-                    ) : (
-                      <div className="ph" />
-                    )}
-                    <div className="pname">{p.name}</div>
-                    {p.location ? <div className="ploc">{p.location}</div> : null}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
 
           {cal.errors.map((e, i) => (
             <div className="err" key={i}>
