@@ -106,4 +106,4 @@ Restart the Android app after a deploy (`adb shell am force-stop <pkg> && am sta
 
 ## Calendar colours
 
-`lib/people.ts` → `CALENDAR_LANES` maps an iCal feed name to a person id (`all` = the family colour). It **mirrors `LANE` in `frame-app/js/live.js`**; change both or the wall and the web paint the same event differently. The web legend on `/calendar` is built from the feeds actually configured.
+`lib/people.ts` → `CALENDAR_FEEDS` gives each iCal feed its own label and shade, and `CALENDAR_LANES` derives the person id from it (`all` = the family colour). There is one feed per calendar (family, personal and work for each adult); work shades are deeper than personal ones so the difference is visible at a glance. It **mirrors `LANE` in `frame-app/js/live.js`**; change both or the wall and the web paint the same event differently. The web legend on `/calendar` is built from the feeds actually configured.

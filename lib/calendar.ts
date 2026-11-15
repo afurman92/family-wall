@@ -130,10 +130,11 @@ export function parseICS(text: string, calendar: string): CalEvent[] {
 
 function feeds(): { url: string; name: string }[] {
   const specs = [
-    { env: "GOOGLE_ICAL_URL", name: "Family" },
-    { env: "GOOGLE_ICAL_URL_2", name: "Personal" },
-    { env: "OUTLOOK_ICAL_URL", name: "Outlook" },
-    { env: "GOOGLE_ICAL_URL_3", name: "Partner" },
+    { env: "GOOGLE_ICAL_URL", name: "Familia" },
+    { env: "GOOGLE_ICAL_URL_2", name: "Alex personal" },
+    { env: "GOOGLE_ICAL_URL_3", name: "Jordan personal" },
+    { env: "OUTLOOK_ICAL_URL", name: "Alex laboral" },
+    { env: "OUTLOOK_ICAL_URL_2", name: "Jordan laboral" },
   ];
   const out: { url: string; name: string }[] = [];
   for (const s of specs) {

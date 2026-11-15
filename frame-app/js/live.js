@@ -14,8 +14,14 @@ function tokenFromUrl() {
 
 // Which dashboard lane an event belongs to. 'all' = everyone (renders as a family
 // event in the demo's neutral colour); otherwise a list of person ids.
-// Outlook is a partner's work calendar; Personal is the other adult's.
-var LANE = { Family: 'all', Personal: ['alex'], Outlook: ['jordan'] };
+// Outlook is Jordan's work calendar; Personal is Alex's.
+var LANE = {
+  Familia: 'all',
+  'Alex personal': ['alex'],
+  'Alex laboral': ['alex'],
+  'Jordan personal': ['jordan'],
+  'Jordan laboral': ['jordan']
+};
 
 function laneFor(calendarName, D) {
   var lane = LANE[calendarName];

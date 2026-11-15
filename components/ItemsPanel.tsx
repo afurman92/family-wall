@@ -16,7 +16,7 @@ type Item = {
   created_at?: string;
 };
 
-// Events are deliberately absent: they belong in the shared Google Calendar,
+// Events are deliberately absent: they belong in the familia Google Calendar,
 // which the frame already reads. This list is for things that have no home there.
 const KINDS: { id: Kind; label: string; emoji: string }[] = [
   { id: "task", label: "To do", emoji: "✓" },
@@ -24,14 +24,13 @@ const KINDS: { id: Kind; label: string; emoji: string }[] = [
   { id: "note", label: "Note", emoji: "✎" },
 ];
 
-// Person colours, shared with the kitchen frame (frame-app/js/data.js).
-// Edit these four to your household; the ids are what you POST as `who`.
+// Exact person colours from the kitchen frame (data.js): Alex blue,
+// Jordan magenta, Maya green. Muse is an agent, so it stays grey.
 const PEOPLE: Record<string, { colour: string; name: string }> = {
   alex: { colour: "#2D5BFF", name: "Alex" },
   jordan: { colour: "#E4007C", name: "Jordan" },
   maya: { colour: "#00A36C", name: "Maya" },
-  otto: { colour: "#FFB000", name: "Otto" },
-  agent: { colour: "#7A756B", name: "Agent" },
+  muse: { colour: "#7A756B", name: "Muse" },
   notion: { colour: "#7A756B", name: "Notion" },
 };
 
@@ -40,7 +39,13 @@ function person(id: string | null | undefined) {
   return PEOPLE[id] || { colour: "#7A756B", name: id };
 }
 
-const TZ = process.env.NEXT_PUBLIC_HOME_TZ || "America/Toronto";
+const TZ = "America/Toronto";
+
+const PLACEHOLDER: Record<Kind, string> = {
+  task: "What needs doing?",
+  shop: "What do we need?",
+  note: "Leave a note for the family",
+};
 
 function dayLabel(iso: string): { text: string; overdue: boolean } {
   const d = new Date(iso);
@@ -93,18 +98,112 @@ function bucketOf(iso: string | null): { key: number; label: string } {
   return { key: 4, label: "Later" };
 }
 
-export default function ItemsPanel({ kinds, composer = true }: Props = {}) {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [kind, setKind] = useState<Kind>(kinds && kinds[0] ? kinds[0] : "task");
+// One composer per list, sitting under that list's own heading. The heading
+// says what the box creates, so there is nothing to pick before typing.
+function AddForm({
+  kind,
+  onAdded,
+  onError,
+}: {
+  kind: Kind;
+  onAdded: () => Promise<void>;
+  onError: (msg: string | null) => void;
+}) {
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
   const [detail, setDetail] = useState("");
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const clean = title.trim();
+    if (!clean || busy) return;
+    setBusy(true);
+    const pendingDue = due;
+    const pendingDetail = detail.trim();
+    setTitle("");
+    setDetail("");
+    setDue("");
+
+    try {
+      const res = await fetch("/api/items", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          kind,
+          title: clean,
+          detail: pendingDetail || undefined,
+          due_at: pendingDue ? new Date(pendingDue).toISOString() : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        onError(j.error || `Couldn't save (HTTP ${res.status}).`);
+        setTitle(clean);
+        return;
+      }
+      onError(null);
+      await onAdded();
+      inputRef.current?.focus();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="addcard" onSubmit={submit}>
+      <input
+        ref={inputRef}
+        className="field"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder={PLACEHOLDER[kind]}
+        maxLength={200}
+        aria-label={PLACEHOLDER[kind]}
+        enterKeyHint="done"
+      />
+
+      <div className="subrow">
+        {more ? (
+          <>
+            {kind !== "note" && (
+              <input
+                className="field"
+                type="datetime-local"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                aria-label="When"
+              />
+            )}
+            <input
+              className="field"
+              value={detail}
+              onChange={(e) => setDetail(e.target.value)}
+              placeholder="Details (optional)"
+              maxLength={500}
+              aria-label="Details"
+            />
+          </>
+        ) : (
+          <button type="button" className="btn-quiet" onClick={() => setMore(true)}>
+            + {kind === "note" ? "Details" : "When or details"}
+          </button>
+        )}
+        <button className="btn" type="submit" disabled={busy || !title.trim()}>
+          {busy ? "Adding…" : "Add"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export default function ItemsPanel({ kinds, composer = true }: Props = {}) {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -128,55 +227,6 @@ export default function ItemsPanel({ kinds, composer = true }: Props = {}) {
   useEffect(() => {
     load();
   }, [load]);
-
-  async function add(e: React.FormEvent) {
-    e.preventDefault();
-    const clean = title.trim();
-    if (!clean || busy) return;
-    setBusy(true);
-
-    // Optimistic: the row appears instantly, then reconciles with the server.
-    const temp: Item = {
-      id: "temp" + Date.now(),
-      kind,
-      title: clean,
-      detail: detail.trim() || null,
-      who: null,
-      due_at: due ? new Date(due).toISOString() : null,
-      done: false,
-      created_by: "",
-    };
-    setItems((prev) => [temp, ...prev]);
-    const pendingDue = due;
-    const pendingDetail = detail.trim();
-    setTitle("");
-    setDetail("");
-    setDue("");
-
-    try {
-      const res = await fetch("/api/items", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          kind,
-          title: clean,
-          detail: pendingDetail || undefined,
-          due_at: pendingDue ? new Date(pendingDue).toISOString() : undefined,
-        }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        setErr(j.error || `Couldn't save (HTTP ${res.status}).`);
-        setItems((prev) => prev.filter((x) => x.id !== temp.id));
-        return;
-      }
-      setErr(null);
-      await load();
-      inputRef.current?.focus();
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function toggle(it: Item) {
     setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)));
@@ -205,80 +255,13 @@ export default function ItemsPanel({ kinds, composer = true }: Props = {}) {
 
   return (
     <>
-      {composer && (
-      <form className="addcard" onSubmit={add}>
-        {shown.length > 1 && (
-        <div className="chips" role="group" aria-label="What kind of thing?">
-          {shown.map((k) => (
-            <button
-              key={k.id}
-              type="button"
-              className="chip"
-              aria-pressed={kind === k.id}
-              onClick={() => {
-                setKind(k.id);
-                inputRef.current?.focus();
-              }}
-            >
-              {k.emoji} {k.label}
-            </button>
-          ))}
-        </div>
-        )}
-
-        <input
-          ref={inputRef}
-          className="field"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder={
-            kind === "shop"
-              ? "What do we need?"
-              : kind === "note"
-              ? "Leave a note for the family"
-              : "What needs doing?"
-          }
-          maxLength={200}
-          aria-label="Title"
-          enterKeyHint="done"
-        />
-
-        <div className="subrow">
-          {more ? (
-            <>
-              <input
-                className="field"
-                type="datetime-local"
-                value={due}
-                onChange={(e) => setDue(e.target.value)}
-                aria-label="When"
-              />
-              <input
-                className="field"
-                value={detail}
-                onChange={(e) => setDetail(e.target.value)}
-                placeholder="Details (optional)"
-                maxLength={500}
-                aria-label="Details"
-              />
-            </>
-          ) : (
-            <button type="button" className="btn-quiet" onClick={() => setMore(true)}>
-              + When or details
-            </button>
-          )}
-          <button className="btn" type="submit" disabled={busy || !title.trim()}>
-            {busy ? "Adding…" : "Add"}
-          </button>
-        </div>
-      </form>
-      )}
-
       {err && <div className="err" style={{ marginBottom: 16 }}>{err}</div>}
 
       {shown.map((k) => {
         const rows = grouped[k.id];
-        if (!rows.length) return null;
+        // With a composer the section always exists, even empty: the input is
+        // how the first item gets in.
+        if (!rows.length && !composer) return null;
         const open = rows.filter((r) => !r.done).length;
         const ordered =
           k.id === "task"
@@ -298,6 +281,11 @@ export default function ItemsPanel({ kinds, composer = true }: Props = {}) {
               </h2>
               <span className="count">{open}</span>
             </div>
+
+            {composer && <AddForm kind={k.id} onAdded={load} onError={setErr} />}
+
+            {!composer && rows.length === 0 && <div className="empty">Nothing here yet.</div>}
+
             {ordered.map((it, idx) => {
               const p = person(it.created_by);
               const glabel = labels[idx];
@@ -348,7 +336,7 @@ export default function ItemsPanel({ kinds, composer = true }: Props = {}) {
         );
       })}
 
-      {loaded && openCount === 0 && !err && (
+      {loaded && openCount === 0 && !err && !composer && (
         <div className="empty">
           Nothing on the list. Add the first thing above — the kitchen frame picks it up within
           a minute.

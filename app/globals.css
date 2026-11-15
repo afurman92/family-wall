@@ -313,6 +313,14 @@ a { color: var(--ink); }
 .empty { font-size: 14.5px; color: var(--mute); padding: 10px 2px; line-height: 1.5; }
 
 /* ============================================================ add box */
+/* inside a section the composer is not another card: the field is the box */
+.section .addcard {
+  margin-bottom: 14px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
 .addcard {
   background: var(--card);
   border: 1px solid var(--line);

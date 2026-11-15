@@ -15,17 +15,25 @@ export const FAMILY: Person = { id: "family", name: "Family", colour: "#111111" 
 
 // Which lane a calendar feed feeds. This mirrors LANE in frame-app/js/live.js:
 // if the two disagree, the wall and the web paint the same event differently.
-export const CALENDAR_LANES: Record<string, string> = {
-  Family: "all",
-  Personal: "alex",
-  Outlook: "jordan",   // a partner's work calendar
-  Partner: "jordan",
+// Five calendars, two per adult plus the family one. Each feed has its own
+// shade so a glance tells work from personal: deep = work, light = personal.
+export const CALENDAR_FEEDS: Record<string, { label: string; colour: string; person: string }> = {
+  Familia: { label: "Familia", colour: "#111111", person: "all" },
+  "Alex personal": { label: "Alex personal", colour: "#7C9BFF", person: "alex" },
+  "Alex laboral": { label: "Alex laboral", colour: "#1F3BC7", person: "alex" },
+  "Jordan personal": { label: "Jordan personal", colour: "#FF8FC7", person: "jordan" },
+  "Jordan laboral": { label: "Jordan laboral", colour: "#C4006A", person: "jordan" },
 };
 
+// Which lane a feed feeds. This mirrors LANE in frame-app/js/live.js: if the two
+// disagree, the wall and the web paint the same event differently.
+export const CALENDAR_LANES: Record<string, string> = Object.fromEntries(
+  Object.entries(CALENDAR_FEEDS).map(([k, v]) => [k, v.person])
+);
+
 export function calendarMeta(feed: string): { label: string; colour: string } {
-  const lane = CALENDAR_LANES[feed];
-  if (lane === "all") return { label: FAMILY.name, colour: FAMILY.colour };
-  if (lane) return { label: personName(lane), colour: personColour(lane) };
+  const f = CALENDAR_FEEDS[feed];
+  if (f) return { label: f.label, colour: f.colour };
   return { label: feed, colour: "#7A756B" };
 }
 
