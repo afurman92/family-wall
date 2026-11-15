@@ -871,3 +871,16 @@ a { color: var(--ink); }
 .cal-legend .lg-dot { margin-right: 0; }
 .cal-ev .lg-dot { margin-right: 4px; width: 6px; height: 6px; }
 .cal-cell.is-today .lg-dot { box-shadow: 0 0 0 1px rgba(255,255,255,.5); }
+
+/* inline toggle that reads as a field, not as a submit button */
+.ytog {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--mute);
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.ytog input { margin: 0; }

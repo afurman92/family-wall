@@ -107,6 +107,22 @@ GET    /api/documents/{id}/file     streams the scan; auth required
 - A document expired or expiring within **120 days** becomes an alert on the wall.
   Keep `expires_on` accurate; that field is what the house relies on.
 
+### Moments (dates the house must not forget)
+
+```http
+GET    /api/moments                  -> { moments: [...] }
+GET    /api/moments?within=30        -> { moments: [{ ..., days_left, in_year }] }
+POST   /api/moments                  -> 201 { moment }
+PATCH  /api/moments/{id}
+DELETE /api/moments/{id}
+```
+
+- Yearly dates (birthday, anniversary): send `month` and `day`, no year.
+- One-off dates: send `on_date` (YYYY-MM-DD). Sending both is a 400 — pick one.
+- `kind`: `birthday` | `anniversary` | `other`. `who`: a member id or `any`.
+- These are **not** calendar events. Birthdays already in the family Google Calendar stay
+  there; duplicating them here would show everything twice.
+
 ### Backup
 
 ```http

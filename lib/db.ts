@@ -88,6 +88,25 @@ export async function ensureSchema(): Promise<boolean> {
   `);
   await p.query(`CREATE INDEX IF NOT EXISTS documents_expiry_idx ON documents (expires_on)`);
 
+  // Dates the house must not forget. Birthdays and anniversaries repeat yearly,
+  // so they are stored as month + day and never expire; one-off dates keep a
+  // full date. Kept here rather than in the calendar so they can't be duplicated
+  // with the birthdays Google already knows about.
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS moments (
+      id           BIGSERIAL PRIMARY KEY,
+      title        TEXT NOT NULL,
+      kind         TEXT NOT NULL DEFAULT 'birthday' CHECK (kind IN ('birthday','anniversary','other')),
+      month        SMALLINT,
+      day          SMALLINT,
+      on_date      DATE,
+      who          TEXT NOT NULL DEFAULT 'any',
+      created_by   TEXT NOT NULL,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      CHECK (month IS NOT NULL OR on_date IS NOT NULL)
+    )
+  `);
+
   // Recipes and plants carried over from Notion. `body` keeps the original block
   // order so a recipe renders the way it was written, not as flattened text.
   await p.query(`
@@ -614,4 +633,118 @@ export async function expiringDocuments(withinDays = 90): Promise<ExpiringDoc[]>
     [withinDays]
   );
   return rows.map((r) => ({ ...r, days_left: Number(r.days_left) }));
+}
+
+// ---------------------------------------------------------------- moments
+
+export type Moment = {
+  id: number;
+  title: string;
+  kind: "birthday" | "anniversary" | "other";
+  month: number | null;
+  day: number | null;
+  on_date: string | null;
+  who: string;
+  created_by: string;
+  created_at: string;
+};
+
+// Days until the next occurrence. Yearly dates wrap: a birthday on Jan 3 is 350
+// days away in February, not -40.
+export type UpcomingMoment = Moment & { days_left: number; in_year: number };
+
+export async function listMoments(): Promise<Moment[]> {
+  const p = db();
+  if (!p) return [];
+  const { rows } = await p.query<Moment>(
+    `SELECT id, title, kind, month, day,
+            to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at
+       FROM moments
+      ORDER BY COALESCE(month, 0), COALESCE(day, 0), on_date`
+  );
+  return rows;
+}
+
+export async function createMoment(m: {
+  title: string;
+  kind?: string;
+  month?: number | null;
+  day?: number | null;
+  on_date?: string | null;
+  who?: string;
+  created_by: string;
+}): Promise<Moment | null> {
+  const p = db();
+  if (!p) return null;
+  const { rows } = await p.query<Moment>(
+    `INSERT INTO moments (title, kind, month, day, on_date, who, created_by)
+     VALUES ($1,$2,$3,$4,$5,COALESCE($6,'any'),$7)
+     RETURNING id, title, kind, month, day, to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at`,
+    [m.title, m.kind || "birthday", m.month ?? null, m.day ?? null, m.on_date ?? null, m.who || null, m.created_by]
+  );
+  return rows[0] ?? null;
+}
+
+export async function updateMoment(
+  id: number,
+  patch: Partial<Pick<Moment, "title" | "kind" | "month" | "day" | "on_date" | "who">>
+): Promise<Moment | null> {
+  const p = db();
+  if (!p) return null;
+  const sets: string[] = [];
+  const vals: any[] = [];
+  const put = (col: string, v: any) => {
+    vals.push(v);
+    sets.push(`${col} = $${vals.length}`);
+  };
+  if (patch.title !== undefined) put("title", patch.title);
+  if (patch.kind !== undefined) put("kind", patch.kind);
+  if (patch.month !== undefined) put("month", patch.month);
+  if (patch.day !== undefined) put("day", patch.day);
+  if (patch.on_date !== undefined) put("on_date", patch.on_date);
+  if (patch.who !== undefined) put("who", patch.who);
+  if (!sets.length) return null;
+  vals.push(id);
+  const { rows } = await p.query<Moment>(
+    `UPDATE moments SET ${sets.join(", ")} WHERE id = $${vals.length}
+     RETURNING id, title, kind, month, day, to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at`,
+    vals
+  );
+  return rows[0] ?? null;
+}
+
+export async function deleteMoment(id: number): Promise<boolean> {
+  const p = db();
+  if (!p) return false;
+  const { rowCount } = await p.query(`DELETE FROM moments WHERE id = $1`, [id]);
+  return (rowCount ?? 0) > 0;
+}
+
+// Next occurrences inside the window. The day arithmetic happens in Postgres so
+// the "today" is the same one the rest of the app uses.
+export async function upcomingMoments(withinDays = 30): Promise<UpcomingMoment[]> {
+  const p = db();
+  if (!p) return [];
+  const { rows } = await p.query<UpcomingMoment>(
+    `WITH next_day AS (
+       SELECT m.*,
+              CASE WHEN m.on_date IS NOT NULL THEN m.on_date
+                   ELSE make_date(
+                     EXTRACT(YEAR FROM CURRENT_DATE)::int
+                       + CASE WHEN make_date(EXTRACT(YEAR FROM CURRENT_DATE)::int, m.month, m.day) < CURRENT_DATE
+                              THEN 1 ELSE 0 END,
+                     m.month, m.day)
+              END AS next_on
+         FROM moments m
+     )
+     SELECT id, title, kind, month, day,
+            to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at,
+            (next_on - CURRENT_DATE) AS days_left,
+            EXTRACT(YEAR FROM next_on)::int AS in_year
+       FROM next_day
+      WHERE (next_on - CURRENT_DATE) BETWEEN 0 AND $1::int
+      ORDER BY next_on ASC`,
+    [withinDays]
+  );
+  return rows.map((r) => ({ ...r, days_left: Number(r.days_left), in_year: Number(r.in_year) }));
 }

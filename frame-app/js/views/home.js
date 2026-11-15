@@ -164,18 +164,34 @@
 
   // Documents past or near expiry. Rare by design, so it is a strip that only
   // exists when it has news — never a card holding the best space hostage.
+  // Two kinds of news share one strip, because both are rare and both live at
+  // the top of the house: a date it must not forget, a document about to lapse.
+  // Dates come first — a birthday in 3 days beats a permit in 40.
   function alertBar() {
-    var list = (D.docAlerts || []).slice().sort(function (a, b) { return a.days_left - b.days_left; });
-    if (!list.length) return '';
-    var shown = list.slice(0, 2), more = list.length - shown.length;
-    return '<div class="ab-label">Vence</div>' + shown.map(function (d) {
-      var late = d.days_left < 0, days = Math.abs(d.days_left);
-      return '<div class="ab-row' + (late ? ' is-late' : '') + '">' +
+    var moments = (D.momentAlerts || []).slice().sort(function (a, b) { return a.d - b.d; });
+    var docs = (D.docAlerts || []).slice().sort(function (a, b) { return a.days_left - b.days_left; });
+    if (!moments.length && !docs.length) return null;
+
+    var parts = [];
+    if (moments.length) {
+      var m = moments[0], moreM = moments.length - 1;
+      parts.push('<div class="ab-row is-moment">' +
+        '<span class="ab-emoji">' + (m.kind === 'birthday' ? '🎂' : m.kind === 'anniversary' ? '💛' : '📌') + '</span>' +
+        '<b>' + App.esc(m.t) + '</b>' +
+        '<span class="num">' + (m.d === 0 ? 'es hoy' : m.d === 1 ? 'es mañana' : 'en ' + m.d + ' días') + '</span>' +
+        (m.inYear ? '<span class="ab-year">' + m.inYear + '</span>' : '') +
+        (moreM > 0 ? '<span class="ab-more">+' + moreM + '</span>' : '') +
+        '</div>');
+    }
+    if (docs.length) {
+      var d = docs[0], late = d.days_left < 0, days = Math.abs(d.days_left);
+      parts.push('<div class="ab-row' + (late ? ' is-late' : '') + '">' +
         '<b>' + App.esc(d.country) + ' · ' + App.esc(d.doc_type) + '</b>' +
-        '<span>' + App.esc(whoName(d.owner)) + '</span>' +
-        '<span class="num">' + (late ? 'venció hace ' + days + ' d' : (days === 0 ? 'vence hoy' : 'en ' + days + ' d')) + '</span>' +
-        '</div>';
-    }).join('') + (more > 0 ? '<div class="ab-more">+' + more + ' más</div>' : '');
+        '<span class="num">' + (late ? 'venció hace ' + days + ' d' : days === 0 ? 'vence hoy' : 'en ' + days + ' d') + '</span>' +
+        (docs.length > 1 ? '<span class="ab-more">+' + (docs.length - 1) + '</span>' : '') +
+        '</div>');
+    }
+    return '<div class="ab-label">' + (moments.length ? 'Fechas' : 'Vence') + '</div>' + parts.join('');
   }
 
   function paint() {
@@ -188,7 +204,7 @@
     el.querySelector('.h-shop').innerHTML = shopping();
     el.querySelector('.h-chores').innerHTML = choresNow();
     var bar = alertBar();
-    el.querySelector('.h-alertbar').innerHTML = bar;
+    el.querySelector('.h-alertbar').innerHTML = bar || '';
     el.querySelector('.home').classList.toggle('has-alerts', !!bar);
   }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getWeather } from "../../../lib/weather";
-import { expiringDocuments, listChores } from "../../../lib/db";
+import { expiringDocuments, listChores, listMoments, upcomingMoments } from "../../../lib/db";
 import { getEvents } from "../../../lib/calendar";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +16,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  const [weather, cal, chores, docAlerts] = await Promise.all([
+  const [weather, cal, chores, docAlerts, moments, soon] = await Promise.all([
     getWeather(),
     getEvents(8, 14),
     listChores(),
     expiringDocuments(120),
+    // Everything, so the web and the wall agree; the window is applied below.
+    listMoments(),
+    upcomingMoments(60),
   ]);
 
   // Optional family slot overrides: FAMILY_PEOPLE=[{"id":"alex","name":"Alex",...}]
@@ -41,6 +44,15 @@ export async function GET(req: Request) {
       weather,
       calendar: cal,
       docAlerts,
+      moments,
+      momentAlerts: soon.map((m) => ({
+        id: m.id,
+        t: m.title,
+        kind: m.kind,
+        who: m.who,
+        d: m.days_left,
+        inYear: m.in_year,
+      })),
       chores: chores.map((c) => ({
         id: c.id,
         title: c.title,

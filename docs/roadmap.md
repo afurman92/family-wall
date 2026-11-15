@@ -40,6 +40,13 @@ Honest state of the project: what actually works, what is still a shell, and wha
 - **A partner's work calendar** — the Outlook feed is already mapped to their colour; it needs the
   iCal link (work accounts often block publishing).
 
+## Dates
+
+Birthdays, anniversaries and one-off dates live in their own table (`/dates`), because the
+family calendar already carries birthdays and a second copy would show up twice. Yearly dates
+store month + day only. Anything inside the next 7 days takes the strip at the top of the wall,
+next to expiring documents.
+
 ## Next, in order
 
 1. **Tick chores from the wall** — the one write worth allowing. Tapping a chore opens "who are

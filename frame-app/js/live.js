@@ -17,10 +17,10 @@ function tokenFromUrl() {
 // Outlook is Jordan's work calendar; Personal is Alex's.
 var LANE = {
   Familia: 'all',
-  'Alex personal': ['alex'],
-  'Alex laboral': ['alex'],
-  'Jordan personal': ['jordan'],
-  'Jordan laboral': ['jordan']
+  'AF personal': ['alex'],
+  'AF laboral': ['alex'],
+  'HK personal': ['jordan'],
+  'HK laboral': ['jordan']
 };
 
 function laneFor(calendarName, D) {
@@ -177,6 +177,9 @@ async function refresh() {
 
   // ---- documents nearing expiry: the wall shows these on the home screen.
   D.docAlerts = data.docAlerts || [];
+
+  // ---- dates the house must not forget (birthdays, anniversaries).
+  D.momentAlerts = data.momentAlerts || [];
 
   // ---- recipes: the list only. A single recipe body can be 145 blocks, so it is
   // fetched on demand when someone opens it, never on every poll.
