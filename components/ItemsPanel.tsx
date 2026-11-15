@@ -16,7 +16,7 @@ type Item = {
   created_at?: string;
 };
 
-// Events are deliberately absent: they belong in the familia Google Calendar,
+// Events are deliberately absent: they belong in the shared Google Calendar,
 // which the frame already reads. This list is for things that have no home there.
 const KINDS: { id: Kind; label: string; emoji: string }[] = [
   { id: "task", label: "To do", emoji: "✓" },
