@@ -79,7 +79,8 @@ export function middleware(req: NextRequest) {
     pathname === "/api/health" ||
     pathname.startsWith("/_next/") ||
     pathname === "/favicon.ico" ||
-    pathname === "/robots.txt"
+    pathname === "/robots.txt" ||
+    pathname === "/llms.txt"
   ) {
     return NextResponse.next();
   }
@@ -106,9 +107,10 @@ export function middleware(req: NextRequest) {
     return NextResponse.next({ request: { headers } });
   }
 
-  return new NextResponse("Authentication required", {
+  // An agent that lands on the door should be told where the instructions are.
+  return new NextResponse("Authentication required.\nAgents: read /llms.txt for the API and the house rules.\n", {
     status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="home", charset="UTF-8"' },
+    headers: { "WWW-Authenticate": 'Basic realm="familia", charset="UTF-8"' },
   });
 }
 

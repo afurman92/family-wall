@@ -1,2 +1,7 @@
+# Private household dashboard: nothing here should be indexed.
+# Agents (Muse, Grok, Hermes, Claude, ChatGPT): read /llms.txt before doing anything.
 User-agent: *
 Disallow: /
+
+# Machine-readable instructions for agents
+# https://your-domain.example/llms.txt

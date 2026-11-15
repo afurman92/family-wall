@@ -1,0 +1,134 @@
+# Family Wall
+
+> A household dashboard for one family. It holds to-dos, the shopping list, notes, recurring
+> chores, identity documents with expiry dates, recipes and an air fryer guide. Next.js +
+> Postgres on Vercel. A wall tablet in the kitchen renders the same data read-only.
+
+Written for agents: Muse, Grok, Hermes, Claude, ChatGPT, or anything else that lands here.
+If you are a person, the app is at `/`.
+
+## Read this before you touch anything
+
+- This is a live household's data, not a sandbox. Everything you see is real.
+- **Ask before deleting.** Deletes are permanent; there is no trash, no undo, no history.
+- Attribute writes to the person who asked: `who` / `owner` must be a member id, never invented.
+- Never create rows called "test", "probe" or similar and leave them behind.
+- Do not touch any other workspace, database, or Notion workspace. This site is the family's;
+  business data lives somewhere else and is off limits.
+- Data is written in Spanish. Interface chrome is English. Match whatever is already there.
+- Poll no faster than once a minute; the wall itself polls every 60 seconds.
+
+## Doors
+
+| Who | How |
+| --- | --- |
+| People | `/` — HTTP Basic, one username per member |
+| Wall tablet | `/frame/<token>` — exact token in the path, read-only, no credentials |
+| Agents | the same Basic auth as people. Every write is attributed to that member |
+
+Writes need no session and no cookie: the middleware resolves the Basic user and passes
+`x-member` to the route.
+
+```bash
+curl -u "member:password" https://your-domain.example/api/items
+```
+
+There is no public sign-up and no API key. If you were not given a member's credentials,
+you cannot read or write anything — and guessing is not acceptable.
+
+## Member ids
+
+`alex`, `jordan`, `maya` — and `any` for "whoever gets to it".
+These ids are what `who` and `owner` fields expect.
+
+## What lives where
+
+- **items** — tasks (`task`), shopping (`shop`), notes (`note`). `/api/items`
+- **chores** — recurring work, one lane per person, resets by period. `/api/chores`
+- **documents** — passports, IDs, permits, licences, with issue and expiry dates. `/api/documents`
+- **recipes**, **plants**, **air_fryer** — their own tables and endpoints
+- **calendar** — *not stored here*. The family Google Calendar is the source of truth, and the
+  wall reads it from ICS feeds. Do not try to store events in this database: `POST /api/items`
+  with `kind: "event"` is rejected on purpose and returns a hint.
+
+## API
+
+### Items
+
+```http
+GET    /api/items[?includeDone=1]   -> { items: [{ id, kind, title, detail, who, done, due_at, created_by, created_at }], count }
+POST   /api/items                   -> 201 { item }
+PATCH  /api/items/{id}              -> { item }
+DELETE /api/items/{id}
+```
+
+- `POST` body: `{ kind: "task" | "shop" | "note", title, who?, detail?, due_at? }`
+- `PATCH` accepts only `done`, `title`, `detail`.
+- `GET` returns open items only unless you pass `includeDone=1`.
+
+```bash
+curl -u "member:password" -X POST https://your-domain.example/api/items \
+  -H 'content-type: application/json' \
+  -d '{"kind":"shop","title":"Leche 2%","who":"jordan"}'
+```
+
+### Chores
+
+```http
+GET    /api/chores                  -> { chores: [...] }
+POST   /api/chores                  -> 201 { chore }
+PATCH  /api/chores/{id}
+DELETE /api/chores/{id}
+```
+
+- `POST` body: `{ title, who, routine?, freq }`
+- `freq`: `daily` | `weekly` | `biweekly` | `monthly`
+- `routine`: `morning` | `after` | `evening` | `any` (the lane on the wall)
+- `PATCH` accepts `title`, `who`, `routine`, `freq`, `done`.
+
+**What "done" means.** A chore is done if it was ticked within the current period, so it
+comes back on its own: `daily` = today, `weekly` = this calendar week (resets Monday),
+`biweekly` = within the last 14 days, `monthly` = this month. Ticking marks today and
+records who did it.
+
+### Documents
+
+```http
+GET    /api/documents               -> { documents: [...] }
+POST   /api/documents               -> { document }
+PATCH  /api/documents               -> { document }   (body must include id)
+POST   /api/documents/{id}/file     multipart, field name "file" (pdf, jpg, png)
+GET    /api/documents/{id}/file     streams the scan; auth required
+```
+
+- Fields: `country`, `doc_type`, `number`, `issued_on`, `expires_on` (YYYY-MM-DD), `owner`, `note`.
+- Scans never live in `public/`: they are stored privately and served through the
+  authenticated route above.
+- A document expired or expiring within **120 days** becomes an alert on the wall.
+  Keep `expires_on` accurate; that field is what the house relies on.
+
+### Backup
+
+```http
+GET /api/export
+```
+
+Full JSON dump of the six tables. Use it for backups, not to read one list.
+
+## Recipes and plants
+
+`GET` and `POST` on `/api/recipes` and `/api/plants`; `PATCH` on `/api/plants`.
+`/api/air-fryer` is `GET`/`POST`. These are read-mostly: if the person asks you to change
+one, read the existing row first and match its shape.
+
+## The wall
+
+`GET /api/frame` returns exactly what the kiosk draws: items, people, weather, calendar,
+chores and expiry alerts. It is a rendering payload, not an integration surface — do not
+write to it.
+
+## If you are unsure
+
+Read first (`GET /api/items`, `GET /api/chores`), then act on the smallest change that
+satisfies the request, then read again to confirm it landed. If a request would delete
+something, or touches documents and scans, ask the person before doing it.
