@@ -15,7 +15,7 @@
 .h-date b { font-family: var(--sans); font-weight: 800; font-stretch: 75%; text-transform: uppercase; letter-spacing: .06em; font-size: 20px; margin-right: 6px; }
 
 /* ---- weather */
-.h-weather { grid-column: 5 / 10; border-bottom: 3px solid var(--ink); padding: 0 8px 6px; display: flex; flex-direction: column; justify-content: flex-end; }
+.h-weather { grid-column: 5 / 13; border-bottom: 3px solid var(--ink); padding: 0 8px 6px; display: flex; flex-direction: column; justify-content: flex-end; }
 .h-wx-top { display: flex; align-items: center; gap: 12px; }
 .h-wx-icon { color: var(--ink); }
 .h-wx-temp { font-size: 84px; line-height: .8; letter-spacing: -.03em; }
@@ -31,14 +31,6 @@
 .h-hr b { font-weight: 800; font-stretch: 70%; }
 .h-hr.is-wet .h-hr-i { color: #1F6FEB; }
 
-/* ---- presence */
-.h-presence { grid-column: 10 / 13; display: flex; flex-direction: column; justify-content: space-between; border-bottom: 3px solid var(--ink); padding: 2px 0 10px; }
-.h-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.h-who > span:not(.avatar) { flex: 1; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
-.h-who b { font-size: 18px; font-weight: 800; white-space: nowrap; flex: none; }
-.h-who small { font-size: var(--fs-min); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.h-who small b { font-size: var(--fs-min); color: var(--c); }
-.h-who .avatar--away { background: var(--paper); }
 
 /* ---- main column */
 .h-main { grid-column: 1 / 8; display: grid; grid-template-rows: 232px 1fr; gap: 16px; min-height: 0; }
@@ -78,17 +70,8 @@
 
 /* ---- side column */
 .h-side { grid-column: 8 / 13; display: grid; grid-template-rows: 1fr 176px 150px; gap: 16px; min-height: 0; }
-.h-photo { position: relative; border-radius: var(--r); overflow: hidden; background: var(--paper-2); display: block; width: 100%; }
-.h-photo-stage { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
-.h-photo-cap {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 18px 14px;
-  background: linear-gradient(0deg, rgba(0, 0, 0, .6), rgba(0, 0, 0, 0));
-  color: #fff; display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
-}
-.h-photo-cap b { font-size: var(--fs-min); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.h-photo-cap span { font-family: var(--serif); font-size: 20px; font-style: italic; }
 
-.h-chores { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
+.h-todos-card, .h-chores { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
 .h-todos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
 .h-todos li { font-size: 17px; line-height: 1.25; }
 .h-todo-empty { font-size: 21px; color: var(--mute); }
@@ -100,7 +83,7 @@
 .h-ring.is-done .num { color: var(--c-ink); }
 
 .h-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.h-shop, .h-status { display: flex; flex-direction: column; gap: 4px; }
+.h-shop, .h-chores { display: flex; flex-direction: column; gap: 4px; }
 .h-stat { display: flex; align-items: baseline; gap: 8px; }
 .h-stat .num { font-size: 56px; line-height: .9; }
 .h-stat small { font-size: 16px; color: var(--mute); }
@@ -112,21 +95,19 @@
 .h-st-row.is-warn { color: #B45F00; font-weight: 800; }
 .h-st-row.is-warn span { color: inherit; }
 
-/* ---- documents about to expire: takes the photo's slot when it has news */
-.h-side-top { position: relative; min-height: 0; }
-.h-side-top > .h-photo { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
-.h-side-top > .h-alerts { display: none; }
-.h-side-top.is-alerts > .h-photo { display: none; }
-.h-side-top.is-alerts > .h-alerts {
+/* ---- documents: the expiry panel, or a plain "all current" */
+.h-docs {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  height: 100%;
-  background: var(--paper);
-  border-left: 6px solid var(--alert);
+  min-height: 0;
   padding: 18px 20px;
+  border-left: 6px solid var(--line);
   overflow: hidden;
 }
+.h-docs.is-alert { border-left-color: var(--alert); }
+.h-doc-ok { font-size: 30px; color: var(--ink); }
+.h-doc-sub { font-size: 14px; color: var(--mute); }
 .al-label {
   font-size: 12px;
   font-weight: 800;

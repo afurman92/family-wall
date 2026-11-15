@@ -27,15 +27,6 @@
       }).join('') + '</div>';
   }
 
-  function presence() {
-    return D.people.map(function (p) {
-      var sub = p.home ? 'Home' : (p.eta ? '<b>ETA ' + p.eta + ' min</b>' : p.status);
-      return '<div class="h-who' + (p.home ? ' is-home' : '') + '" style="' + App.pstyle(p) + '">' +
-        App.avatar(p, 36, p.home ? '' : 'avatar--away') +
-        '<span><b>' + p.name + '</b><small>' + sub + '</small></span></div>';
-    }).join('');
-  }
-
   function hero() {
     var e = App.nextEvent(), now = App.now();
     if (!e) {
@@ -154,37 +145,49 @@
       (more > 0 ? '<div class="al-more">+' + more + ' más</div>' : '');
   }
 
-  function status() {
-    var lights = D.devices.filter(function (d) { return d.type === 'light' && d.on; }).length;
-    var unlocked = D.devices.filter(function (d) { return d.type === 'lock' && !d.locked; });
-    var garage = D.devices.filter(function (d) { return d.type === 'garage'; })[0];
-    var secure = !unlocked.length && garage.state === 'closed';
-    var secText = secure ? 'All locked' : (garage.state !== 'closed' ? 'Garage open' : unlocked[0].name + ' unlocked');
-    return '<div class="label">Home</div>' +
-      '<div class="h-st-row">' + App.icon('bulb', 24) + '<b class="num">' + lights + '</b><span>lights on</span></div>' +
-      '<div class="h-st-row' + (secure ? '' : ' is-warn') + '">' + App.icon(secure ? 'lock' : 'unlock', 24) + '<span>' + secText + '</span></div>' +
-      '<div class="h-st-row">' + App.icon('thermo', 24) + '<b class="num">' + D.climate.current + '°</b><span>inside</span></div>';
+  // Chores due in the routine that is running now — real rows, same set the
+  // chores view shows.
+  function choresNow() {
+    var r = App.currentRoutine();
+    var list = (D.chores || []).filter(function (c) { return c.r === r.id || c.r === 'any'; });
+    var done = list.filter(function (c) { return c.done; }).length;
+    var left = list.filter(function (c) { return !c.done; }).slice(0, 2);
+    if (!list.length) {
+      return '<div class="label">Chores</div><div class="h-todo-empty serif"><i>Nothing today</i></div>';
+    }
+    return '<div class="label">Chores · ' + r.name + '</div>' +
+      '<div class="h-stat"><span class="num">' + done + '</span><small>of ' + list.length + ' done</small></div>' +
+      '<ul class="h-recent">' + left.map(function (c) {
+        return '<li><i></i>' + App.esc(c.title) + '</li>';
+      }).join('') + '</ul>';
+  }
+
+  // Documents: the alert panel when something needs attention, a plain "all
+  // current" otherwise — never a placeholder dressed up as data.
+  function docs() {
+    var html = alerts();
+    if (html) return { html: html, alert: true };
+    return {
+      alert: false,
+      html: '<div class="label">Documentos</div>' +
+        '<div class="h-doc-ok serif"><i>Todo vigente</i></div>' +
+        '<div class="h-doc-sub">Sin vencimientos en 120 días</div>'
+    };
   }
 
   function paint() {
     var el = V.el;
     el.querySelector('.h-clock').innerHTML = clock();
     el.querySelector('.h-weather').innerHTML = weather();
-    el.querySelector('.h-presence').innerHTML = presence();
     el.querySelector('.h-hero-slot').innerHTML = hero();
     el.querySelector('.h-lanes').innerHTML = lanes();
-    el.querySelector('.h-chores').innerHTML = todos();
+    el.querySelector('.h-todos-card').innerHTML = todos();
     el.querySelector('.h-shop').innerHTML = shopping();
-    el.querySelector('.h-status').innerHTML = status();
-    var top = el.querySelector('.h-side-top');
-    var has = (D.docAlerts || []).length > 0;
-    top.classList.toggle('is-alerts', has);
-    if (has) el.querySelector('.h-alerts').innerHTML = alerts();
-  }
-
-  function photoCaption(s) {
-    var m = App.photoMeta(s.photos[0]);
-    V.el.querySelector('.h-photo-cap').innerHTML = '<b>' + (m.onThisDay ? 'On this day · ' : '') + m.kicker + '</b><span>' + App.esc(m.place) + '</span>';
+    el.querySelector('.h-chores').innerHTML = choresNow();
+    var docCard = el.querySelector('.h-docs');
+    var dd = docs();
+    docCard.innerHTML = dd.html;
+    docCard.classList.toggle('is-alert', dd.alert);
   }
 
   App.register('home', {
@@ -194,12 +197,11 @@
         el.innerHTML = '<div class="home">' +
           '<div class="h-clock" data-go="calendar"></div>' +
           '<div class="h-weather"></div>' +
-          '<div class="h-presence"></div>' +
           '<div class="h-main"><div class="h-hero-slot"></div><div class="h-lanes" style="grid-template-columns:repeat(' + D.people.length + ',1fr)"></div></div>' +
           '<div class="h-side">' +
-          '  <div class="h-side-top"><button class="h-photo" data-go="photos"><div class="h-photo-stage"></div><div class="h-photo-cap"></div></button><div class="h-alerts card"></div></div>' +
-          '  <button class="h-chores card" data-go="todos"></button>' +
-          '  <div class="h-duo"><button class="h-shop card" data-go="shopping"></button><button class="h-status card" data-go="control"></button></div>' +
+          '  <div class="h-docs card"></div>' +
+          '  <button class="h-todos-card card" data-go="todos"></button>' +
+          '  <div class="h-duo"><button class="h-shop card" data-go="shopping"></button><button class="h-chores card" data-go="chores"></button></div>' +
           '</div></div>';
         el.addEventListener('click', function (e) {
           var ev = e.target.closest('[data-ev]');
@@ -207,13 +209,9 @@
           var g = e.target.closest('[data-go]');
           if (g) App.go(g.dataset.go);
         });
-        V.slides = new App.Slideshow(el.querySelector('.h-photo-stage'), { layout: 'cover', captions: false, interval: 12000, onChange: photoCaption });
       }
       paint();
-      V.slides.start();
-    },
-    resume: function () { V.slides.start(); },
-    hide: function () { if (V.slides) V.slides.stop(); }
+    }
   });
   // Every minute: just the clock and next-up countdown (cheap, even while hidden). Weather on the hour.
   App.on('minute', function (n) {

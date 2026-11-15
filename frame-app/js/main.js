@@ -13,8 +13,5 @@ import './views/todos.js';
 import './views/shopping.js';
 import './views/recipes.js';
 import './views/airfryer.js';
-import './views/photos.js';
-import './views/control.js';
-import './views/agents.js';
 import './views/ambient.js';
 import './diag.js';

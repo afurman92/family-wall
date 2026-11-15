@@ -1,11 +1,11 @@
 /* Shopping */
-.shop { height: 100%; display: grid; grid-template-columns: 1fr 440px; grid-template-rows: auto 1fr; gap: 16px 24px; }
+.shop { height: 100%; display: grid; grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; gap: 16px; }
 .s-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 24px; }
 .s-head h1 { font-size: 64px; line-height: .95; }
 .s-count { margin-right: auto; font-size: 22px; color: var(--mute); padding-top: 22px; }
 .s-count .num { font-size: 34px; color: var(--ink); }
 
-.s-list { min-height: 0; overflow-y: auto; padding-bottom: 110px; }
+.s-list { min-height: 0; overflow-y: auto; padding-bottom: 12px; }
 .s-cat { margin-bottom: 14px; }
 .s-cat-h { display: flex; justify-content: space-between; padding: 6px 4px 8px; border-bottom: 2px solid var(--ink); margin-bottom: 4px; }
 .s-row {
@@ -67,3 +67,12 @@
 .s-ac-row { display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 0 18px 0 22px; border-radius: 14px; background: var(--card); }
 .s-ac-row b { flex: 1; font-size: 22px; }
 .s-ac-row--new { background: transparent; box-shadow: inset 0 0 0 2px var(--line); }
+
+/* quantity as a plain marker, no steppers */
+.s-qty-n { font-size: 24px; color: var(--mute); padding: 0 6px; }
+/* the footer that replaced the drawer */
+.s-got-line { font-size: 16px; color: var(--mute); padding: 4px 4px 0; border-top: 1px solid var(--line); }
+.s-got-line b { font-size: 20px; color: var(--ink); margin-right: 4px; }
+
+/* read-only rows: a dot, not a checkbox that can't be ticked */
+.s-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); flex: none; margin: 0 18px 0 6px; }

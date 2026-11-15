@@ -35,11 +35,8 @@ Honest state of the project: what actually works, what is still a shell, and wha
 
 ## Half-built
 
-- **Usuals** (suggested items in the shopping view) — still the demo list. The plan is to derive
-  it from grocery order emails (Voilà / Instacart / whatever you use) instead of inventing it.
-- **Photos** — the slideshow runs on demo images; it needs a real source (folder, S3, Immich).
-- **Home status card** — lights, locks and inside temperature are demo values; there is no home
-  automation integration behind them.
+- **Usuals** (suggested items) — not built. If they ever exist they must come from real order history
+  (grocery emails), never from a demo list.
 - **A partner's work calendar** — the Outlook feed is already mapped to their colour; it needs the
   iCal link (work accounts often block publishing).
 
