@@ -24,15 +24,17 @@
   App.dayStart = function (d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
   App.addDays = function (d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; };
   App.sameDay = function (a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); };
-  // Night follows the sun, not the clock: at northern latitudes it is dark at
-  // 17:00 in November and still light at 21:00 in June. Falls back to 22:00-06:00
-  // when the forecast has no sunrise/sunset for today.
+  // Night follows the sun, not the clock: in Toronto it is dark at 17:00 in
+  // November and still light at 21:00 in June. Falls back to 22:00-06:00 when
+  // the forecast has no sunrise/sunset for today.
   App.isNight = function () {
     var now = App.now();
     var w = (window.DATA && window.DATA.weather) || null;
-    if (w && w.sunset) {
-      var s = new Date(w.sunset);
-      if (!isNaN(s.getTime()) && s.toDateString() === now.toDateString()) return now >= s;
+    if (w && w.sunrise && w.sunset) {
+      var sr = new Date(w.sunrise), ss = new Date(w.sunset);
+      // Both bounds matter: after sunset it is night, and it stays night until
+      // sunrise. Checking only the sunset made 3 a.m. count as day.
+      if (!isNaN(sr.getTime()) && !isNaN(ss.getTime())) return now < sr || now >= ss;
     }
     var h = now.getHours();
     return h >= 22 || h < 6;
@@ -350,6 +352,8 @@
     if (n.getMinutes() !== lastMin) {
       lastMin = n.getMinutes();
       $('#railClock').innerHTML = '<b>' + App.fmt.time(n, false) + '</b><span>' + App.fmt.ampm(n) + '</span>';
+      // Sunrise ends the black screen on its own: nobody touches the wall at 7 a.m.
+      if (App.mode === 'night' && !App.isNight()) { App.closeSheet(); App.setMode('day'); App.go('home'); }
       App.emit('minute', n);
     }
     onIdleTick();
