@@ -52,7 +52,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   if (!(await ensureSchema())) {
     return NextResponse.json({ error: "no database" }, { status: 503 });
   }
-  const ok = await deleteItem(id);
+  const ok = await deleteItem(id, req.headers.get("x-member"));
   return ok
     ? NextResponse.json({ deleted: id })
     : NextResponse.json({ error: "not found" }, { status: 404 });

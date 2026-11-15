@@ -7,13 +7,14 @@ const LINKS = [
   { href: "/air-fryer", label: "Air Fryer", id: "air-fryer" },
   { href: "/documents", label: "Documents", id: "documents" },
   { href: "/dates", label: "Dates", id: "dates" },
+  { href: "/trash", label: "Trash", id: "trash" },
 ];
 
 export default function Shell({
   active,
   dateLine,
 }: {
-  active: "today" | "calendar" | "chores" | "air-fryer" | "documents" | "dates";
+  active: "today" | "calendar" | "chores" | "air-fryer" | "documents" | "dates" | "trash";
   dateLine?: string;
 }) {
   return (

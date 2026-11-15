@@ -51,6 +51,6 @@ export async function DELETE(req: Request, ctx: Ctx) {
   const id = Number(raw);
   if (!Number.isInteger(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
   if (!(await ensureSchema())) return NextResponse.json({ error: "no database" }, { status: 503 });
-  const ok = await deleteMoment(id);
+  const ok = await deleteMoment(id, req.headers.get("x-member"));
   return ok ? NextResponse.json({ ok }) : NextResponse.json({ error: "not found" }, { status: 404 });
 }

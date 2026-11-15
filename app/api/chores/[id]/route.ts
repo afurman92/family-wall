@@ -62,6 +62,6 @@ export async function DELETE(req: Request, ctx: Ctx) {
   const id = await idFrom(ctx);
   if (!id) return NextResponse.json({ error: "invalid id" }, { status: 400 });
 
-  const gone = await deleteChore(id);
+  const gone = await deleteChore(id, member);
   return NextResponse.json({ deleted: gone, id });
 }

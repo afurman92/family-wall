@@ -46,6 +46,12 @@ family calendar already carries birthdays and a second copy would show up twice.
 store month + day only. Anything inside the next 7 days takes the strip at the top of the wall,
 next to expiring documents.
 
+## Trash
+
+Deletes mark the row (`deleted_at`) instead of destroying it. `/trash` lists items, chores, documents
+and moments for 30 days, with a Restaurar button; `GET /api/trash` also sweeps anything older than the
+window. Agents can restore, humans can purge.
+
 ## Next, in order
 
 1. **Tick chores from the wall** — the one write worth allowing. Tapping a chore opens "who are

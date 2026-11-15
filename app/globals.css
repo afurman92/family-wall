@@ -900,3 +900,7 @@ a { color: var(--ink); }
   flex: 0 0 auto;
 }
 .ytog input { margin: 0; }
+
+/* in the trash the permanent delete must be visible: nobody should have to hunt for it */
+.trash-row .del { opacity: 0.6; }
+.trash-row .del:hover { opacity: 1; }

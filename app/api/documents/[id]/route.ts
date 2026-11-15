@@ -70,16 +70,9 @@ export async function DELETE(req: Request, ctx: Ctx) {
   const doc = await getDocument(id);
   if (!doc) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const gone = await deleteDocument(id);
+  const gone = await deleteDocument(id, who);
 
-  // The row is gone; the scan should not outlive it.
-  if (gone && doc.file_url) {
-    try {
-      await del(doc.file_url);
-    } catch (e) {
-      console.warn("[documents] could not delete blob", e instanceof Error ? e.message : e);
-    }
-  }
-
-  return NextResponse.json({ deleted: gone, id });
+  // The scan stays in Blob while the row is in the trash: deleting it here would
+  // make "restore" a lie. It leaves when the row is purged for good.
+  return NextResponse.json({ deleted: gone, id, trash: gone });
 }

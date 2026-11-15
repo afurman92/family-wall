@@ -121,6 +121,20 @@ GET    /api/documents/{id}/file     streams the scan; auth required
 - A document expired or expiring within **120 days** becomes an alert on the wall.
   Keep `expires_on` accurate; that field is what the house relies on.
 
+### Deleting is reversible
+
+`DELETE /api/items/{id}` (and chores, moments, documents) does **not** destroy the row: it marks
+`deleted_at` and the row leaves every list. It stays in the trash for 30 days.
+
+```http
+GET  /api/trash                                   -> { rows, count, days }
+POST /api/trash  { "table": "items", "id": 12, "action": "restore" }
+POST /api/trash  { "table": "items", "id": 12, "action": "purge" }   -> 403 for agent keys
+```
+
+An agent key may **restore** but never **purge** — only a person can empty the trash. If you delete
+something by mistake, restore it; do not re-create it, which would leave two of it.
+
 ### Backup
 
 ```http

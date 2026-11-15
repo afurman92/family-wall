@@ -63,6 +63,10 @@ editing for the year you learn later.
 - **The backup is the export button.** `/api/export` dumps each table with `SELECT *`, and a nightly
   job writes it to a synced folder. A column added later cannot go missing from the backup; a *new
   table* is one line in `TABLES`, and that line is the only place to remember.
+- **A delete is a mark, not a disappearance.** `items`, `chores`, `documents` and `moments` carry
+  `deleted_at`; every read filters it out and `/trash` restores within 30 days. Documents keep their
+  scan in Blob until the row is purged, so "restore" is not a lie. Only a person can empty the trash —
+  an agent key may restore but never destroy.
 - **Dates do not go in the calendar.** Google already carries birthdays, so a second copy would show
   everything twice. They live in `moments`, stored as month + day (they never expire), with an
   optional year that exists only to compute *turns 35* / *12 years*.
@@ -101,12 +105,14 @@ charger with the screen always on.
 ```
 app/                 Next.js routes (pages + API)
   dates/             the page for moments
+  trash/             restore or empty what was deleted
   api/items          to-dos, shopping, notes
   api/chores         repeating chores: person, routine, frequency
   api/recipes        recipes + scaling source
   api/air-fryer      table with validated modes
   api/documents      metadata, owner, authenticated file streaming
   api/moments        birthdays, anniversaries, one-off dates
+  api/trash          restore or purge what a delete left behind
   api/export         every table as one JSON file (the backup)
   api/frame          everything the wall needs, in one payload
   frame/[token]      the wall shell

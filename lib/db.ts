@@ -111,6 +111,13 @@ export async function ensureSchema(): Promise<boolean> {
   await p.query(`ALTER TABLE moments ADD COLUMN IF NOT EXISTS year SMALLINT`);
   await p.query(`ALTER TABLE moments ADD COLUMN IF NOT EXISTS note TEXT`);
 
+  // Nothing in this house is deleted twice by accident: a delete only marks the
+  // row. Everything reads `deleted_at IS NULL`; /trash restores or empties it.
+  for (const t of ["items", "chores", "documents", "moments"]) {
+    await p.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+    await p.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS deleted_by TEXT`);
+  }
+
   // Recipes carried over from Notion. `body` keeps the original block
   // order so a recipe renders the way it was written, not as flattened text.
   await p.query(`
@@ -309,6 +316,7 @@ export async function listDocuments(): Promise<Document[]> {
   const { rows } = await p.query<Document>(
     `SELECT id, country, doc_type, number, issued_on, expires_on, owner, file_url, note
        FROM documents
+      WHERE deleted_at IS NULL
       ORDER BY (expires_on IS NULL), expires_on ASC`
   );
   return rows;
@@ -349,10 +357,13 @@ export async function updateDocument(
   return rows[0] ?? null;
 }
 
-export async function deleteDocument(id: number): Promise<boolean> {
+export async function deleteDocument(id: number, by?: string | null): Promise<boolean> {
   const p = db();
   if (!p) throw new Error("no database");
-  const { rowCount } = await p.query(`DELETE FROM documents WHERE id = $1`, [id]);
+  const { rowCount } = await p.query(
+    `UPDATE documents SET deleted_at = now(), deleted_by = $2 WHERE id = $1 AND deleted_at IS NULL`,
+    [id, by ?? null]
+  );
   return (rowCount ?? 0) > 0;
 }
 
@@ -383,7 +394,7 @@ export async function createDocument(input: {
 export async function listItems(opts: { includeDone?: boolean } = {}): Promise<Item[]> {
   const p = db();
   if (!p) return [];
-  const where = opts.includeDone ? "" : "WHERE done = false";
+  const where = opts.includeDone ? "WHERE deleted_at IS NULL" : "WHERE done = false AND deleted_at IS NULL";
   const { rows } = await p.query<Item>(
     `SELECT * FROM items ${where}
      ORDER BY (due_at IS NULL), due_at ASC, created_at DESC
@@ -441,10 +452,13 @@ export async function updateItem(
   return rows[0] ?? null;
 }
 
-export async function deleteItem(id: number): Promise<boolean> {
+export async function deleteItem(id: number, by?: string | null): Promise<boolean> {
   const p = db();
   if (!p) throw new Error("no database");
-  const { rowCount } = await p.query(`DELETE FROM items WHERE id = $1`, [id]);
+  const { rowCount } = await p.query(
+    `UPDATE items SET deleted_at = now(), deleted_by = $2 WHERE id = $1 AND deleted_at IS NULL`,
+    [id, by ?? null]
+  );
   return (rowCount ?? 0) > 0;
 }
 
@@ -485,6 +499,7 @@ export async function listChores(): Promise<Chore[]> {
                 ELSE CURRENT_DATE END) AS done,
             created_by, created_at
        FROM chores
+      WHERE deleted_at IS NULL
       ORDER BY who, routine, lower(title)`
   );
   return rows;
@@ -542,10 +557,13 @@ export async function updateChore(
   return rows[0] ?? null;
 }
 
-export async function deleteChore(id: number): Promise<boolean> {
+export async function deleteChore(id: number, by?: string | null): Promise<boolean> {
   const p = db();
   if (!p) throw new Error("no database");
-  const { rowCount } = await p.query(`DELETE FROM chores WHERE id = $1`, [id]);
+  const { rowCount } = await p.query(
+    `UPDATE chores SET deleted_at = now(), deleted_by = $2 WHERE id = $1 AND deleted_at IS NULL`,
+    [id, by ?? null]
+  );
   return (rowCount ?? 0) > 0;
 }
 
@@ -567,7 +585,8 @@ export async function expiringDocuments(withinDays = 90): Promise<ExpiringDoc[]>
     `SELECT id, country, doc_type, owner, expires_on,
             (expires_on - CURRENT_DATE) AS days_left
        FROM documents
-      WHERE expires_on IS NOT NULL
+      WHERE deleted_at IS NULL
+        AND expires_on IS NOT NULL
         AND expires_on <= CURRENT_DATE + $1::int
       ORDER BY expires_on ASC`,
     [withinDays]
@@ -602,6 +621,7 @@ export async function listMoments(): Promise<Moment[]> {
     `SELECT id, title, kind, month, day, year, note,
             to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at
        FROM moments
+      WHERE deleted_at IS NULL
       ORDER BY COALESCE(month, 0), COALESCE(day, 0), on_date`
   );
   return rows;
@@ -659,10 +679,13 @@ export async function updateMoment(
   return rows[0] ?? null;
 }
 
-export async function deleteMoment(id: number): Promise<boolean> {
+export async function deleteMoment(id: number, by?: string | null): Promise<boolean> {
   const p = db();
   if (!p) return false;
-  const { rowCount } = await p.query(`DELETE FROM moments WHERE id = $1`, [id]);
+  const { rowCount } = await p.query(
+    `UPDATE moments SET deleted_at = now(), deleted_by = $2 WHERE id = $1 AND deleted_at IS NULL`,
+    [id, by ?? null]
+  );
   return (rowCount ?? 0) > 0;
 }
 
@@ -689,7 +712,8 @@ export async function upcomingMoments(withinDays = 30): Promise<UpcomingMoment[]
             EXTRACT(YEAR FROM next_on)::int AS in_year,
             CASE WHEN year IS NOT NULL THEN EXTRACT(YEAR FROM next_on)::int - year END AS age
        FROM next_day
-      WHERE (next_on - CURRENT_DATE) BETWEEN 0 AND $1::int
+      WHERE deleted_at IS NULL
+        AND (next_on - CURRENT_DATE) BETWEEN 0 AND $1::int
       ORDER BY next_on ASC`,
     [withinDays]
   );
@@ -699,4 +723,78 @@ export async function upcomingMoments(withinDays = 30): Promise<UpcomingMoment[]
     in_year: Number(r.in_year),
     age: r.age === null || r.age === undefined ? null : Number(r.age),
   }));
+}
+
+// ---------------------------------------------------------------- trash
+// A delete marks the row; this is where it can come back, for 30 days.
+export const TRASH_DAYS = 30;
+
+const TRASH_TABLES: Record<string, string> = {
+  items: "title",
+  chores: "title",
+  moments: "title",
+  documents: "COALESCE(country, '') || CASE WHEN country IS NULL OR country = '' THEN '' ELSE ' · ' END || COALESCE(doc_type, 'Documento')",
+};
+
+export type TrashRow = {
+  table: string;
+  id: number;
+  title: string;
+  deleted_at: string;
+  deleted_by: string | null;
+  file_url?: string | null;
+};
+
+export function isTrashTable(t: string): boolean {
+  return Object.prototype.hasOwnProperty.call(TRASH_TABLES, t);
+}
+
+export async function listTrash(): Promise<TrashRow[]> {
+  const p = db();
+  if (!p) return [];
+  const out: TrashRow[] = [];
+  for (const [table, expr] of Object.entries(TRASH_TABLES)) {
+    const extra = table === "documents" ? ", file_url" : "";
+    const { rows } = await p.query(
+      `SELECT id, ${expr} AS title, deleted_at, deleted_by${extra}
+         FROM ${table}
+        WHERE deleted_at IS NOT NULL
+        ORDER BY deleted_at DESC
+        LIMIT 200`
+    );
+    for (const r of rows) out.push({ table, ...r, id: Number(r.id) });
+  }
+  return out.sort((a, b) => String(b.deleted_at).localeCompare(String(a.deleted_at)));
+}
+
+export async function restoreRow(table: string, id: number): Promise<boolean> {
+  const p = db();
+  if (!p || !isTrashTable(table)) return false;
+  const { rowCount } = await p.query(
+    `UPDATE ${table} SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 AND deleted_at IS NOT NULL`,
+    [id]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function purgeRow(table: string, id: number): Promise<boolean> {
+  const p = db();
+  if (!p || !isTrashTable(table)) return false;
+  const { rowCount } = await p.query(`DELETE FROM ${table} WHERE id = $1 AND deleted_at IS NOT NULL`, [id]);
+  return (rowCount ?? 0) > 0;
+}
+
+// Anything older than the window leaves on its own; nobody has to remember.
+export async function purgeExpired(): Promise<number> {
+  const p = db();
+  if (!p) return 0;
+  let n = 0;
+  for (const table of Object.keys(TRASH_TABLES)) {
+    const { rowCount } = await p.query(
+      `DELETE FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < now() - ($1 || ' days')::interval`,
+      [TRASH_DAYS]
+    );
+    n += rowCount ?? 0;
+  }
+  return n;
 }
