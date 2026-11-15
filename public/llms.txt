@@ -45,7 +45,7 @@ curl -H "Authorization: Bearer $AGENT_KEY" https://your-domain.example/api/items
 Each person has their own agent key (`muse` for Alex, `muse-jordan` for Jordan), so the
 history shows who acted and for whom. A browser that cannot
 answer the HTTP Basic dialog should open `/agent-login?k=<key>` once — it sets an HttpOnly cookie
-for 30 days and redirects to the app.
+for 400 days and redirects to the app. The key does not expire on its own.
 
 There is no public sign-up and no API key. If you were not given a member's credentials,
 you cannot read or write anything — and guessing is not acceptable.

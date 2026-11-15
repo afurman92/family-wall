@@ -93,7 +93,8 @@ export function middleware(req: NextRequest) {
       secure: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 30,
+      // Chrome caps cookies at 400 days; the key itself never expires.
+      maxAge: 60 * 60 * 24 * 400,
     });
     return res;
   }
