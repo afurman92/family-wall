@@ -35,8 +35,9 @@ const CODES: Record<number, [string, string]> = {
 };
 
 // WMO code -> the demo's icon vocabulary: sun | partly | cloud | rain | snow | moon
-function condWord(code: number, hour: number): string {
-  const night = hour < 6 || hour >= 20;
+// Night for the icons is the real night, not 20:00: in November the sun is gone
+// at 16:32 and a sun at 7 PM is a small lie the wall tells every evening.
+function condWord(code: number, night: boolean): string {
   if (code >= 95) return "rain";
   if (code >= 71 && code <= 86) return "snow";
   if (code >= 51) return "rain";
@@ -90,7 +91,16 @@ export async function getWeather(): Promise<Weather> {
       sunset: j?.daily?.sunset?.[0] ?? null,
       ok: true,
       t: Array.from({ length: 24 }, (_, h) => (temps[h] != null ? Math.round(temps[h]) : 0)),
-      c: Array.from({ length: 24 }, (_, h) => (codes[h] != null ? condWord(codes[h], h) : "cloud")),
+      c: Array.from({ length: 24 }, (_, h) => {
+        const sr = j?.daily?.sunrise?.[0];
+        const ss = j?.daily?.sunset?.[0];
+        const hm = (v: string | undefined, fallback: number) => {
+          const m = v ? /T(\d{2}):(\d{2})/.exec(v) : null;
+          return m ? Number(m[1]) + Number(m[2]) / 60 : fallback;
+        };
+        const night = h + 0.5 < hm(sr, 6) || h + 0.5 >= hm(ss, 20);
+        return codes[h] != null ? condWord(codes[h], night) : "cloud";
+      }),
       p: Array.from({ length: 24 }, (_, h) => (probs[h] != null ? probs[h] : 0)),
     };
   } catch {

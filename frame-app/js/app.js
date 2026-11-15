@@ -352,8 +352,12 @@
     if (n.getMinutes() !== lastMin) {
       lastMin = n.getMinutes();
       $('#railClock').innerHTML = '<b>' + App.fmt.time(n, false) + '</b><span>' + App.fmt.ampm(n) + '</span>';
-      // Sunrise ends the black screen on its own: nobody touches the wall at 7 a.m.
-      if (App.mode === 'night' && !App.isNight()) { App.closeSheet(); App.setMode('day'); App.go('home'); }
+      // The sun sets the mode, not the last tap: the screensaver used to latch —
+      // if it went paper-grey at 16:20 it stayed grey all evening, and if it went
+      // black at 16:45 it stayed black all morning. Re-check every minute.
+      var night = App.isNight();
+      if (App.mode === 'night' && !night) { App.closeSheet(); App.setMode('day'); App.go('home'); }
+      else if (App.mode === 'ambient' && night) { App.setMode('night'); }
       App.emit('minute', n);
     }
     onIdleTick();
