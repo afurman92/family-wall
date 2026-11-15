@@ -111,3 +111,46 @@
 .h-st-row span { color: var(--ink-2); }
 .h-st-row.is-warn { color: #B45F00; font-weight: 800; }
 .h-st-row.is-warn span { color: inherit; }
+
+/* ---- documents about to expire: takes the photo's slot when it has news */
+.h-side-top { position: relative; min-height: 0; }
+.h-side-top > .h-photo { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+.h-side-top > .h-alerts { display: none; }
+.h-side-top.is-alerts > .h-photo { display: none; }
+.h-side-top.is-alerts > .h-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  background: var(--paper);
+  border-left: 6px solid var(--alert);
+  padding: 18px 20px;
+  overflow: hidden;
+}
+.al-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--alert);
+}
+.al-sub { font-size: 13px; color: var(--mute); margin-top: 3px; }
+.al-list { display: flex; flex-direction: column; gap: 12px; margin-top: 2px; }
+.al-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.al-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.al-main { min-width: 0; }
+.al-main b { display: block; font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+.al-main small { display: block; font-size: 13px; color: var(--mute); margin-top: 2px; }
+.al-when { text-align: right; flex: none; }
+.al-when b { display: block; font-size: 22px; font-weight: 800; color: var(--ink); }
+.al-when small { display: block; font-size: 11.5px; color: var(--mute); white-space: nowrap; }
+.al-row.is-late .al-when b,
+.al-row.is-late .al-main b { color: var(--alert); }
+.al-more { font-size: 12.5px; color: var(--mute); letter-spacing: .06em; text-transform: uppercase; }

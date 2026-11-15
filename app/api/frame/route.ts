@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getWeather } from "../../../lib/weather";
+import { expiringDocuments, listChores } from "../../../lib/db";
 import { getEvents } from "../../../lib/calendar";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +16,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  const [weather, cal] = await Promise.all([getWeather(), getEvents(8, 14)]);
+  const [weather, cal, chores, docAlerts] = await Promise.all([
+    getWeather(),
+    getEvents(8, 14),
+    listChores(),
+    expiringDocuments(120),
+  ]);
 
-  // Optional family slot overrides: FAMILY_PEOPLE=[{"id":"alex","name":"Alex",...}]
+  // Optional family slot overrides: FAMILY_PEOPLE=[{"id":"alex","name":"Alejandro",...}]
   let people: unknown = null;
   if (process.env.FAMILY_PEOPLE) {
     try {
@@ -34,6 +40,14 @@ export async function GET(req: Request) {
       people,
       weather,
       calendar: cal,
+      docAlerts,
+      chores: chores.map((c) => ({
+        id: c.id,
+        title: c.title,
+        who: c.who,
+        routine: c.routine,
+        done: c.done,
+      })),
     },
     { headers: { "Cache-Control": "no-store" } }
   );

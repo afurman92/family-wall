@@ -29,7 +29,7 @@ function connectionString(): string | null {
   if (direct) return direct;
 
   // Vercel Marketplace integrations prefix the vars with the resource name,
-  // e.g. MYKITCHEN_POSTGRES_URL. Accept any such prefix, but avoid the
+  // e.g. FAMILIA_POSTGRES_URL. Accept any such prefix, but avoid the
   // unpooled/non-pooling variants which break in serverless.
   const candidates = Object.keys(process.env).filter(
     (k) =>
@@ -130,6 +130,22 @@ export async function ensureSchema(): Promise<boolean> {
   `);
   await p.query(`ALTER TABLE air_fryer ADD COLUMN IF NOT EXISTS mode TEXT`);
   await p.query(`CREATE INDEX IF NOT EXISTS air_fryer_sort_idx ON air_fryer (lower(ingredient), servings)`);
+
+  // Chores are their own thing: they repeat, they belong to a person AND a part
+  // of the day, and "done" resets every morning. An item does none of that.
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS chores (
+      id          BIGSERIAL PRIMARY KEY,
+      title       TEXT NOT NULL,
+      who         TEXT NOT NULL DEFAULT 'any',
+      routine     TEXT NOT NULL DEFAULT 'any' CHECK (routine IN ('morning','after','evening','any')),
+      emoji       TEXT,
+      done_on     DATE,
+      created_by  TEXT NOT NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await p.query(`CREATE INDEX IF NOT EXISTS chores_who_idx ON chores (who, routine)`);
 
   schemaReady = true;
   return true;
@@ -481,3 +497,105 @@ export const AIR_FRYER_MODES = [
   "Reheat",
   "Dehydrate",
 ] as const;
+
+// ---------------------------------------------------------------- chores
+export type Chore = {
+  id: number;
+  title: string;
+  who: string;
+  routine: "morning" | "after" | "evening" | "any";
+  emoji: string | null;
+  done_on: string | null;
+  done: boolean;
+  created_by: string;
+  created_at: string;
+};
+
+export async function listChores(): Promise<Chore[]> {
+  const p = db();
+  if (!p) return [];
+  const { rows } = await p.query<Chore>(
+    `SELECT id, title, who, routine, emoji, done_on,
+            (done_on IS NOT NULL AND done_on = CURRENT_DATE) AS done,
+            created_by, created_at
+       FROM chores
+      ORDER BY who, routine, lower(title)`
+  );
+  return rows;
+}
+
+export async function createChore(input: {
+  title: string;
+  who?: string | null;
+  routine?: string | null;
+  emoji?: string | null;
+  created_by: string;
+}): Promise<Chore> {
+  const p = db();
+  if (!p) throw new Error("no database");
+  const { rows } = await p.query<Chore>(
+    `INSERT INTO chores (title, who, routine, emoji, created_by)
+     VALUES ($1, COALESCE($2,'any'), COALESCE($3,'any'), $4, $5)
+     RETURNING id, title, who, routine, emoji, done_on, false AS done, created_by, created_at`,
+    [input.title, input.who ?? null, input.routine ?? null, input.emoji ?? null, input.created_by]
+  );
+  return rows[0];
+}
+
+export async function updateChore(
+  id: number,
+  patch: { title?: string; who?: string; routine?: string; done?: boolean }
+): Promise<Chore | null> {
+  const p = db();
+  if (!p) throw new Error("no database");
+  const sets: string[] = [];
+  const vals: unknown[] = [];
+  if (patch.title !== undefined) { sets.push(`title = $${sets.length + 1}`); vals.push(patch.title); }
+  if (patch.who !== undefined) { sets.push(`who = $${sets.length + 1}`); vals.push(patch.who); }
+  if (patch.routine !== undefined) { sets.push(`routine = $${sets.length + 1}`); vals.push(patch.routine); }
+  if (patch.done !== undefined) {
+    sets.push(patch.done ? `done_on = CURRENT_DATE` : `done_on = NULL`);
+  }
+  if (!sets.length) return null;
+  vals.push(id);
+  const { rows } = await p.query<Chore>(
+    `UPDATE chores SET ${sets.join(", ")} WHERE id = $${sets.length + 1}
+     RETURNING id, title, who, routine, emoji, done_on,
+               (done_on IS NOT NULL AND done_on = CURRENT_DATE) AS done, created_by, created_at`,
+    vals
+  );
+  return rows[0] ?? null;
+}
+
+export async function deleteChore(id: number): Promise<boolean> {
+  const p = db();
+  if (!p) throw new Error("no database");
+  const { rowCount } = await p.query(`DELETE FROM chores WHERE id = $1`, [id]);
+  return (rowCount ?? 0) > 0;
+}
+
+// Documents whose expiry has passed or is close. The wall needs the numbers,
+// not the records: days_left is negative once expired.
+export type ExpiringDoc = {
+  id: number;
+  country: string;
+  doc_type: string;
+  owner: string | null;
+  expires_on: string;
+  days_left: number;
+};
+
+export async function expiringDocuments(withinDays = 90): Promise<ExpiringDoc[]> {
+  const p = db();
+  if (!p) return [];
+  const { rows } = await p.query<ExpiringDoc>(
+    `SELECT id, country, doc_type, owner, expires_on,
+            (expires_on - CURRENT_DATE) AS days_left
+       FROM documents
+      WHERE expires_on IS NOT NULL
+        AND expires_on <= CURRENT_DATE + $1::int
+      ORDER BY expires_on ASC`,
+    [withinDays]
+  );
+  return rows.map((r) => ({ ...r, days_left: Number(r.days_left) }));
+}

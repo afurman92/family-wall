@@ -50,6 +50,26 @@ function applyPeople(incoming) {
   D.week = w;
 }
 
+// Chores have no icon field in the database; the title decides.
+var EMOJI = [
+  [/vajilla|plato|dish/i, '🍽️'],
+  [/lavarropas|ropa|laundry/i, '🧺'],
+  [/basura|trash|garbage/i, '🗑️'],
+  [/aspiradora|aspirar|vacuum|barrer/i, '🧹'],
+  [/cama|sábanas|bed/i, '🛏️'],
+  [/baño|bath|ducha/i, '🛁'],
+  [/cocina|kitchen|mesada/i, '🧽'],
+  [/planta|jardín|riego|plant/i, '🪴'],
+  [/perro|gato|dog|cat/i, '🐾'],
+  [/bebé|pañal|baby/i, '🧷'],
+  [/compra|super|shop/i, '🛒'],
+  [/auto|car|nafta/i, '🚗']
+];
+function emojiFor(t) {
+  for (var i = 0; i < EMOJI.length; i++) if (EMOJI[i][0].test(t || '')) return EMOJI[i][1];
+  return '🧹';
+}
+
 async function refresh() {
   var D = window.DATA;
   if (!D) return { ok: false, reason: 'no DATA' };
@@ -124,12 +144,30 @@ async function refresh() {
       // Real to-dos: the home card lists these instead of the demo's chores.
       D.todos = list.filter(function (i) { return i.kind === 'task'; });
       window.LIVE_ITEMS = list;
-      // Events are not merged in from here: they live in the household Google
+      // Events are not merged in from here: they live in the familia Google
       // Calendar and arrive through the ICS feed above.
     }
   } catch (e) {
     console.warn('[live] items fetch failed', e);
   }
+
+  // ---- chores: real rows, one lane per person on the wall.
+  if (data.chores && data.chores.length >= 0) {
+    D.chores = data.chores.map(function (c) {
+      return {
+        id: 'ch' + c.id,
+        title: c.title,
+        who: c.who || 'any',
+        r: c.routine || 'any',
+        emoji: emojiFor(c.title),
+        done: !!c.done,
+        overdue: false
+      };
+    });
+  }
+
+  // ---- documents nearing expiry: the wall shows these on the home screen.
+  D.docAlerts = data.docAlerts || [];
 
   // ---- recipes: the list only. A single recipe body can be 145 blocks, so it is
   // fetched on demand when someone opens it, never on every poll.

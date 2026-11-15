@@ -120,6 +120,40 @@
       }).join('') + '</ul>';
   }
 
+  // Documents that are expired or about to expire. The photo is the one thing
+  // on this screen that can step aside for them.
+  function whoName(id) {
+    var p = App.person(id);
+    return p && p.name ? p.name : (id || '');
+  }
+
+  function alerts() {
+    var list = (D.docAlerts || []).slice().sort(function (a, b) { return a.days_left - b.days_left; });
+    if (!list.length) return '';
+    var expired = list.filter(function (d) { return d.days_left < 0; }).length;
+    var shown = list.slice(0, 4);
+    var more = list.length - shown.length;
+    var sub = expired
+      ? expired + ' vencido' + (expired === 1 ? '' : 's') + (list.length > expired ? ' · ' + (list.length - expired) + ' por vencer' : '')
+      : list.length + ' por vencer';
+    return '<div class="al-head">' +
+        '<div class="al-label">Vencimientos</div>' +
+        '<div class="al-sub">' + sub + '</div>' +
+      '</div>' +
+      '<div class="al-list">' + shown.map(function (d) {
+        var late = d.days_left < 0;
+        var days = Math.abs(d.days_left);
+        var when = late ? 'venció hace ' + days + ' d' : (days === 0 ? 'vence hoy' : 'vence en ' + days + ' d');
+        return '<div class="al-row' + (late ? ' is-late' : '') + '">' +
+          '<div class="al-main"><b>' + App.esc(d.country) + ' · ' + App.esc(d.doc_type) + '</b>' +
+          '<small>' + App.esc(whoName(d.owner)) + '</small></div>' +
+          '<div class="al-when"><b class="num">' + (days === 0 ? 'hoy' : days + ' d') + '</b>' +
+          '<small>' + when + '</small></div>' +
+        '</div>';
+      }).join('') + '</div>' +
+      (more > 0 ? '<div class="al-more">+' + more + ' más</div>' : '');
+  }
+
   function status() {
     var lights = D.devices.filter(function (d) { return d.type === 'light' && d.on; }).length;
     var unlocked = D.devices.filter(function (d) { return d.type === 'lock' && !d.locked; });
@@ -142,6 +176,10 @@
     el.querySelector('.h-chores').innerHTML = todos();
     el.querySelector('.h-shop').innerHTML = shopping();
     el.querySelector('.h-status').innerHTML = status();
+    var top = el.querySelector('.h-side-top');
+    var has = (D.docAlerts || []).length > 0;
+    top.classList.toggle('is-alerts', has);
+    if (has) el.querySelector('.h-alerts').innerHTML = alerts();
   }
 
   function photoCaption(s) {
@@ -159,7 +197,7 @@
           '<div class="h-presence"></div>' +
           '<div class="h-main"><div class="h-hero-slot"></div><div class="h-lanes" style="grid-template-columns:repeat(' + D.people.length + ',1fr)"></div></div>' +
           '<div class="h-side">' +
-          '  <button class="h-photo" data-go="photos"><div class="h-photo-stage"></div><div class="h-photo-cap"></div></button>' +
+          '  <div class="h-side-top"><button class="h-photo" data-go="photos"><div class="h-photo-stage"></div><div class="h-photo-cap"></div></button><div class="h-alerts card"></div></div>' +
           '  <button class="h-chores card" data-go="todos"></button>' +
           '  <div class="h-duo"><button class="h-shop card" data-go="shopping"></button><button class="h-status card" data-go="control"></button></div>' +
           '</div></div>';
