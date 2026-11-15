@@ -58,6 +58,9 @@ week).
 - **One table for tasks, shopping and notes.** `items.kind` decides which view shows it. Chores got
   their own table because they repeat and belong to a part of the day — three columns of exceptions
   in `items` would have been worse.
+- **The backup is the export button.** `/api/export` dumps every table with `SELECT *`, and a nightly
+  job writes it to a synced folder. A column added later cannot go missing from the backup because
+  nobody remembered to update a list.
 - **Colours mean one thing.** A feed maps to a person in `CALENDAR_LANES` (`lib/people.ts`) and in
   `LANE` (`frame-app/js/live.js`); the legend on `/calendar` is built from the feeds actually
   configured. Change one, change the other.
@@ -92,6 +95,7 @@ app/                 Next.js routes (pages + API)
   api/recipes        recipes + scaling source
   api/air-fryer      table with validated modes
   api/documents      metadata, owner, authenticated file streaming
+  api/export         every table as one JSON file (the backup)
   api/frame          everything the wall needs, in one payload
   frame/[token]      the wall shell
 components/          dashboard UI (ItemsPanel, ChoresEditor, DocumentsEditor, …)

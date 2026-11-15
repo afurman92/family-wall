@@ -28,6 +28,9 @@ Honest state of the project: what actually works, what is still a shell, and wha
   from a local list (71 lines, Spanish and English, rotating every 20 minutes).
 - **Idle behaviour** — recipes and the air fryer never jump home; everything else returns to
   Today after 60 s and dims after 120 s.
+- **Backup / export** — `/api/export` returns every table as one JSON file; a nightly job writes it
+  into a synced folder and keeps a 45-day window. Scans stay in the private blob store, so a full
+  backup is this file plus that store.
 - **Auth** — HTTP Basic for the app, per-person member names for attribution, read-only frame token.
 
 ## Half-built
@@ -49,8 +52,7 @@ Honest state of the project: what actually works, what is still a shell, and wha
    store the result; never show a suggestion that did not come from real history.
 3. **Notifications** — "the milk was added", "the frame is offline". Needs a push channel; the
    display is a pull surface today.
-4. **Export** — one button that dumps everything to JSON, so leaving this project is as easy as
-   joining it.
+4. **Restore** — the backup exists; a one-command restore into a fresh database does not.
 
 ## Not doing
 
