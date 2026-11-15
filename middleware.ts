@@ -111,6 +111,18 @@ export function middleware(req: NextRequest) {
     return NextResponse.next({ request: { headers } });
   }
 
+  // ---- the ONE write the wall is allowed: mark a chore done, or undo it.
+  // Scoped by path and method so the frame token can never create, delete or
+  // touch documents; the worst a copied token can do is tick a chore.
+  if (req.method === "POST" && /^\/api\/frame\/chores\/\d+$/.test(pathname)) {
+    const frameTok = req.nextUrl.searchParams.get("token");
+    if (frameTok && process.env.FRAME_TOKEN && frameTok === process.env.FRAME_TOKEN) {
+      const headers = new Headers(req.headers);
+      headers.set("x-frame", "1");
+      return NextResponse.next({ request: { headers } });
+    }
+  }
+
   // ---- item/document/recipe reads for the frame (token in the query, GET only)
   if (
     pathname.startsWith("/api/items") ||

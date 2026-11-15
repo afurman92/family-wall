@@ -52,6 +52,11 @@ Deletes mark the row (`deleted_at`) instead of destroying it. `/trash` lists ite
 and moments for 30 days, with a Restaurar button; `GET /api/trash` also sweeps anything older than the
 window. Agents can restore, humans can purge.
 
+## The wall writes one thing
+
+Ticking a chore from the frame (`POST /api/frame/chores/{id}`), optimistic, with roll-back and undo
+on a second tap. Deliberately narrow: the token cannot create, delete or touch documents.
+
 ## Next, in order
 
 1. **Tick chores from the wall** — the one write worth allowing. Tapping a chore opens "who are

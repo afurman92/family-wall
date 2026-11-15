@@ -116,10 +116,38 @@
     });
   }
 
+  // The wall can do exactly one write: tick a chore. It goes out optimistically
+  // so the tap feels instant, and rolls back if the server says no.
+  function writeDone(c, done) {
+    var was = c.done;
+    c.done = done;
+    render();
+    var tok = window.FRAME_TOKEN || null;
+    if (!tok) { c.done = was; render(); return; }
+    fetch('/api/frame/chores/' + c.id + '?token=' + encodeURIComponent(tok), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ done: done })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      App.toast(done ? '<b>' + App.esc(c.title) + '</b> done' : '<b>' + App.esc(c.title) + '</b> back on the list', { icon: done ? 'check' : null, ms: 2200 });
+      if (typeof refresh === 'function') refresh();
+    }).catch(function () {
+      c.done = was;
+      render();
+      App.toast('<b>No se pudo guardar</b> · tocá de nuevo', { ms: 3000 });
+    });
+  }
+
   function onClick(e) {
     var t;
     if ((t = e.target.closest('[data-r]'))) { V.routine = t.dataset.r === App.currentRoutine().id ? null : t.dataset.r; return render(); }
-    // Chores on the wall are a reading, not a checkbox: the frame cannot write.
+    if ((t = e.target.closest('[data-ch]'))) {
+      var id = t.dataset.ch;
+      var c = D.chores.filter(function (x) { return String(x.id) === String(id); })[0];
+      if (c) writeDone(c, !c.done);
+      return;
+    }
     return;
   }
 

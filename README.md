@@ -29,7 +29,7 @@ Two pieces, one database:
   close — an **alert strip across the top** (the strip does not exist when there is nothing)
 - Calendar: month grid, swipeable
 - Chores: one lane per person, scoped to morning / afternoon / evening, with a ring per lane.
-  Read-only — the wall shows, the web edits
+  Tap a chore to mark it done — the one thing the wall is allowed to write; tap again to undo
 - To do, kept separate from chores on purpose
 - Shopping list, read-only (the wall cannot save; a tick that vanishes is worse than none)
 - Recipes that **scale** — tap 2 / 4 / 6 / 8 and every ingredient and step follows, including
@@ -47,9 +47,10 @@ editing for the year you learn later.
 
 ## Design decisions worth stealing
 
-- **The wall is read-only.** Its token lives in a URL that anyone standing there can read. So it
-  can only `GET`, and the allowlist is in `middleware.ts`. Chores are a reading on the wall for the
-  same reason: a checkbox that cannot save is worse than no checkbox.
+- **The wall is read-only, with one exception.** Its token lives in a URL anyone standing there can
+  read, so it can only `GET` — except `POST /api/frame/chores/{id}`, which ticks a chore and nothing
+  else. Middleware allows it by path and method: a copied wall token can annoy the chore list, not the
+  house. Everything else (documents, dates, to-dos, shopping) is still read-only there.
 - **"Done" lasts the period, not the day.** A daily chore is done until tomorrow, a weekly one
   until Monday, a monthly one until the 1st. That is the whole difference between a chore and a
   task, and it lives in one `CASE` in `listChores()`.

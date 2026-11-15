@@ -45,7 +45,7 @@ curl -H "Authorization: Bearer $AGENT_KEY" https://your-domain.example/api/items
 Each person has their own agent key (`muse` for Alex, `muse-jordan` for Jordan), so the
 history shows who acted and for whom. A browser that cannot
 answer the HTTP Basic dialog should open `/agent-login?k=<key>` once — it sets an HttpOnly cookie
-for 400 days and redirects to the app. The key does not expire on its own.
+for 30 days and redirects to the app.
 
 There is no public sign-up and no API key. If you were not given a member's credentials,
 you cannot read or write anything — and guessing is not acceptable.
@@ -120,6 +120,18 @@ GET    /api/documents/{id}/file     streams the scan; auth required
   authenticated route above.
 - A document expired or expiring within **120 days** becomes an alert on the wall.
   Keep `expires_on` accurate; that field is what the house relies on.
+
+### The wall writes exactly one thing
+
+The frame token (`?token=`) is otherwise read-only. The single exception is
+
+```http
+POST /api/frame/chores/{id}?token=<FRAME_TOKEN>   { "done": true }
+```
+
+which ticks or unticks a chore and nothing else — no create, no delete, no documents. Middleware
+allows it by path and method, so a copied wall token can annoy the chore list, not the house. Agents
+should keep using `PATCH /api/chores/{id}`.
 
 ### Deleting is reversible
 

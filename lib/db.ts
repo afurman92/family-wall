@@ -557,6 +557,18 @@ export async function updateChore(
   return rows[0] ?? null;
 }
 
+// The wall's only write: a chore is done for the current period, or not.
+export async function setChoreDone(id: number, done: boolean): Promise<boolean> {
+  const p = db();
+  if (!p) return false;
+  const { rowCount } = await p.query(
+    `UPDATE chores SET done_on = CASE WHEN $2 THEN CURRENT_DATE ELSE NULL END
+      WHERE id = $1 AND deleted_at IS NULL`,
+    [id, done]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
 export async function deleteChore(id: number, by?: string | null): Promise<boolean> {
   const p = db();
   if (!p) throw new Error("no database");

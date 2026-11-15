@@ -163,7 +163,8 @@ async function refresh() {
   if (data.chores && data.chores.length >= 0) {
     D.chores = data.chores.map(function (c) {
       return {
-        id: 'ch' + c.id,
+        // The id is the database's own: the wall sends it back when ticking.
+        id: String(c.id),
         title: c.title,
         who: c.who || 'any',
         r: c.routine || 'any',
@@ -234,3 +235,7 @@ setInterval(function () {
       console.warn('[live] poll failed', e);
     });
 }, window.LIVE_POLL_MS);
+
+// Vite wraps these in a module, so the views cannot see tokenFromUrl().
+// The wall needs the token for its one write (ticking a chore).
+window.FRAME_TOKEN = tokenFromUrl();
