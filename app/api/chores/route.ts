@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const WHO = [...PEOPLE.map((p) => p.id), ANY.id];
 const ROUTINES = ["morning", "after", "evening", "any"];
-const FREQS = ["daily", "weekly", "monthly"];
+const FREQS = ["daily", "weekly", "biweekly", "monthly"];
 
 export async function GET() {
   if (!(await ensureSchema())) return NextResponse.json({ error: "no database" }, { status: 503 });

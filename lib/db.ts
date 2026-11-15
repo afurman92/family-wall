@@ -506,7 +506,7 @@ export type Chore = {
   title: string;
   who: string;
   routine: "morning" | "after" | "evening" | "any";
-  freq: "daily" | "weekly" | "monthly";
+  freq: "daily" | "weekly" | "biweekly" | "monthly";
   emoji: string | null;
   done_on: string | null;
   done: boolean;
@@ -521,6 +521,7 @@ export async function listChores(): Promise<Chore[]> {
     `SELECT id, title, who, routine, freq, emoji, done_on,
             (done_on IS NOT NULL AND done_on >= CASE freq
                 WHEN 'weekly' THEN date_trunc('week', CURRENT_DATE)::date
+                WHEN 'biweekly' THEN (CURRENT_DATE - 13)
                 WHEN 'monthly' THEN date_trunc('month', CURRENT_DATE)::date
                 ELSE CURRENT_DATE END) AS done,
             created_by, created_at
@@ -573,6 +574,8 @@ export async function updateChore(
      RETURNING id, title, who, routine, freq, emoji, done_on,
                (done_on IS NOT NULL AND done_on >= CASE freq
                    WHEN 'weekly' THEN date_trunc('week', CURRENT_DATE)::date
+                   WHEN 'biweekly' THEN (CURRENT_DATE - 13)
+                WHEN 'biweekly' THEN (CURRENT_DATE - 13)
                    WHEN 'monthly' THEN date_trunc('month', CURRENT_DATE)::date
                    ELSE CURRENT_DATE END) AS done, created_by, created_at`,
     vals

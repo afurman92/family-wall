@@ -8,7 +8,7 @@ export type Chore = {
   title: string;
   who: string;
   routine: "morning" | "after" | "evening" | "any";
-  freq: "daily" | "weekly" | "monthly";
+  freq: "daily" | "weekly" | "biweekly" | "monthly";
   emoji: string | null;
   done_on: string | null;
   done: boolean;
@@ -26,6 +26,7 @@ const ROUTINES: { id: Chore["routine"]; label: string }[] = [
 const FREQS: { id: Chore["freq"]; label: string }[] = [
   { id: "daily", label: "Daily" },
   { id: "weekly", label: "Weekly" },
+  { id: "biweekly", label: "Every 2 weeks" },
   { id: "monthly", label: "Monthly" },
 ];
 

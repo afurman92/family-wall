@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const WHO = [...PEOPLE.map((p) => p.id), ANY.id];
 const ROUTINES = ["morning", "after", "evening", "any"];
-const FREQS = ["daily", "weekly", "monthly"];
+const FREQS = ["daily", "weekly", "biweekly", "monthly"];
 
 type Ctx = { params: Promise<{ id: string }> };
 
