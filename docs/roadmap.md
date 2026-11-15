@@ -19,7 +19,7 @@ Honest state of the project: what actually works, what is still a shell, and wha
 - **Plants** — list with care notes and photos.
 - **Documents** — country / type / number / expiry / owner, searchable, sorted by what expires
   first; scans stream through an authenticated route, never from `public/`. Anything expired or
-  expiring within 120 days surfaces on the wall's home screen.
+  expiring within 120 days shows as a strip on the wall's home screen — and only then.
 - **Calendar** — month grid on the web, week strip on the dashboard, agenda on mobile. Each feed
   maps to a colour (family vs. person) with a legend built from the configured feeds; the wall
   uses the same mapping.

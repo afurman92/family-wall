@@ -162,17 +162,20 @@
       }).join('') + '</ul>';
   }
 
-  // Documents: the alert panel when something needs attention, a plain "all
-  // current" otherwise — never a placeholder dressed up as data.
-  function docs() {
-    var html = alerts();
-    if (html) return { html: html, alert: true };
-    return {
-      alert: false,
-      html: '<div class="label">Documentos</div>' +
-        '<div class="h-doc-ok serif"><i>Todo vigente</i></div>' +
-        '<div class="h-doc-sub">Sin vencimientos en 120 días</div>'
-    };
+  // Documents past or near expiry. Rare by design, so it is a strip that only
+  // exists when it has news — never a card holding the best space hostage.
+  function alertBar() {
+    var list = (D.docAlerts || []).slice().sort(function (a, b) { return a.days_left - b.days_left; });
+    if (!list.length) return '';
+    var shown = list.slice(0, 2), more = list.length - shown.length;
+    return '<div class="ab-label">Vence</div>' + shown.map(function (d) {
+      var late = d.days_left < 0, days = Math.abs(d.days_left);
+      return '<div class="ab-row' + (late ? ' is-late' : '') + '">' +
+        '<b>' + App.esc(d.country) + ' · ' + App.esc(d.doc_type) + '</b>' +
+        '<span>' + App.esc(whoName(d.owner)) + '</span>' +
+        '<span class="num">' + (late ? 'venció hace ' + days + ' d' : (days === 0 ? 'vence hoy' : 'en ' + days + ' d')) + '</span>' +
+        '</div>';
+    }).join('') + (more > 0 ? '<div class="ab-more">+' + more + ' más</div>' : '');
   }
 
   function paint() {
@@ -184,10 +187,9 @@
     el.querySelector('.h-todos-card').innerHTML = todos();
     el.querySelector('.h-shop').innerHTML = shopping();
     el.querySelector('.h-chores').innerHTML = choresNow();
-    var docCard = el.querySelector('.h-docs');
-    var dd = docs();
-    docCard.innerHTML = dd.html;
-    docCard.classList.toggle('is-alert', dd.alert);
+    var bar = alertBar();
+    el.querySelector('.h-alertbar').innerHTML = bar;
+    el.querySelector('.home').classList.toggle('has-alerts', !!bar);
   }
 
   App.register('home', {
@@ -197,11 +199,12 @@
         el.innerHTML = '<div class="home">' +
           '<div class="h-clock" data-go="calendar"></div>' +
           '<div class="h-weather"></div>' +
+          '<div class="h-alertbar"></div>' +
           '<div class="h-main"><div class="h-hero-slot"></div><div class="h-lanes" style="grid-template-columns:repeat(' + D.people.length + ',1fr)"></div></div>' +
           '<div class="h-side">' +
-          '  <div class="h-docs card"></div>' +
           '  <button class="h-todos-card card" data-go="todos"></button>' +
-          '  <div class="h-duo"><button class="h-shop card" data-go="shopping"></button><button class="h-chores card" data-go="chores"></button></div>' +
+          '  <button class="h-chores card" data-go="chores"></button>' +
+          '  <button class="h-shop card" data-go="shopping"></button>' +
           '</div></div>';
         el.addEventListener('click', function (e) {
           var ev = e.target.closest('[data-ev]');
