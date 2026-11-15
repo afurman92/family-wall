@@ -19,10 +19,10 @@ export const FAMILY: Person = { id: "family", name: "Family", colour: "#111111" 
 // shade so a glance tells work from personal: deep = work, light = personal.
 export const CALENDAR_FEEDS: Record<string, { label: string; colour: string; person: string }> = {
   Familia: { label: "Familia", colour: "#111111", person: "all" },
-  "Alex personal": { label: "Alex personal", colour: "#7C9BFF", person: "alex" },
-  "Alex laboral": { label: "Alex laboral", colour: "#1F3BC7", person: "alex" },
-  "Jordan personal": { label: "Jordan personal", colour: "#FF8FC7", person: "jordan" },
-  "Jordan laboral": { label: "Jordan laboral", colour: "#C4006A", person: "jordan" },
+  "AF personal": { label: "AF personal", colour: "#7C9BFF", person: "alex" },
+  "AF laboral": { label: "AF laboral", colour: "#1F3BC7", person: "alex" },
+  "HK personal": { label: "HK personal", colour: "#FF8FC7", person: "jordan" },
+  "HK laboral": { label: "HK laboral", colour: "#C4006A", person: "jordan" },
 };
 
 // Which lane a feed feeds. This mirrors LANE in frame-app/js/live.js: if the two

@@ -31,7 +31,14 @@ export async function GET(req: Request) {
   if (process.env.FAMILY_PEOPLE) {
     try {
       const parsed = JSON.parse(process.env.FAMILY_PEOPLE);
-      if (Array.isArray(parsed)) people = parsed;
+      // The override may still carry the demo-era ids; translate them so the wall
+      // and the database speak the same names.
+      const legacy: Record<string, string> = { alex: "alex", jordan: "jordan", maya: "maya" };
+      if (Array.isArray(parsed)) {
+        people = parsed.map((p: any) =>
+          p && typeof p.id === "string" && legacy[p.id] ? { ...p, id: legacy[p.id] } : p
+        );
+      }
     } catch {
       /* ignore malformed config */
     }

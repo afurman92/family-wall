@@ -40,10 +40,10 @@ curl -H "Authorization: Bearer $AGENT_KEY" https://your-domain.example/api/items
 
 **Agent keys.** If you were given a key (Muse, Hermes, any other agent), send it as
 `Authorization: Bearer <key>` or `x-agent-key: <key>`. Writes are then attributed to the agent
-(`created_by: "muse"`). **Always set `who` to the person you are acting for** — an item with
+(`created_by: "muse"` / `"muse-jordan"`). **Always set `who` to the person you are acting for** — an item with
 `who: null` does not say whose it is, and the family cannot tell whether it was for Alex or Jordan.
-Each person has their own agent key (`muse`, `muse-jordan`), so the history shows who acted and
-for whom. A browser that cannot
+Each person has their own agent key (`muse` for Alex, `muse-jordan` for Jordan), so the
+history shows who acted and for whom. A browser that cannot
 answer the HTTP Basic dialog should open `/agent-login?k=<key>` once — it sets an HttpOnly cookie
 for 30 days and redirects to the app.
 
