@@ -52,6 +52,7 @@ export async function GET(req: Request) {
         who: m.who,
         d: m.days_left,
         inYear: m.in_year,
+        age: m.age ?? null,
       })),
       chores: chores.map((c) => ({
         id: c.id,

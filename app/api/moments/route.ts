@@ -54,6 +54,19 @@ export async function POST(req: Request) {
   const month = body?.month !== undefined && body?.month !== null ? int(body.month, 1, 12) : null;
   const day = body?.day !== undefined && body?.day !== null ? int(body.day, 1, 31) : null;
   const onDate = typeof body?.on_date === "string" && body.on_date ? body.on_date.slice(0, 10) : null;
+  // Optional year of birth / of the first anniversary. Only meaningful for
+  // dates that repeat; it is what lets the wall say "turns 35".
+  const nowYear = new Date().getFullYear();
+  const year =
+    body?.year !== undefined && body?.year !== null && body?.year !== ""
+      ? int(body.year, 1900, nowYear)
+      : null;
+  if (body?.year !== undefined && body?.year !== null && body?.year !== "" && year === null) {
+    return NextResponse.json({ error: `year must be 1900-${nowYear}` }, { status: 400 });
+  }
+  if (year !== null && onDate) {
+    return NextResponse.json({ error: "a year only makes sense for a date that repeats" }, { status: 400 });
+  }
 
   if (onDate && (month !== null || day !== null)) {
     return NextResponse.json(
@@ -77,6 +90,7 @@ export async function POST(req: Request) {
     month,
     day,
     on_date: onDate,
+    year,
     who: typeof body?.who === "string" ? body.who.slice(0, 40) : undefined,
     created_by: who,
   });

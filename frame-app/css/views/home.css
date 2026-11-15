@@ -121,7 +121,7 @@
 .ab-row.is-late b, .ab-row.is-late span.num { color: var(--alert); }
 .ab-row.is-moment b { font-weight: 800; }
 .ab-emoji { font-size: 18px; line-height: 1; }
-.ab-year { color: var(--mute); font-size: 13px; letter-spacing: .04em; }
+.ab-year { color: var(--ink); font-size: 13.5px; font-weight: 700; letter-spacing: .02em; margin-left: 6px; }
 .ab-more { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); flex: none; }
 .al-label {
   font-size: 12px;

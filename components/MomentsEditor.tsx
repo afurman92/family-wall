@@ -8,6 +8,7 @@ type Moment = {
   kind: "birthday" | "anniversary" | "other";
   month: number | null;
   day: number | null;
+  year: number | null;
   on_date: string | null;
   who: string;
   created_by: string;
@@ -30,12 +31,24 @@ const MONTHS = [
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
+// Age at the next occurrence: a birthday "turns 35", an anniversary "12 years".
+function milestone(m: Moment): string | null {
+  if (!m.year) return null;
+  const now = new Date();
+  // The year the date next happens: this year if it has not passed, else next.
+  const thisYear = new Date(now.getFullYear(), (m.month || 1) - 1, m.day || 1);
+  const nextYear = thisYear < now ? now.getFullYear() + 1 : now.getFullYear();
+  const n = nextYear - m.year;
+  if (n <= 0) return null;
+  return m.kind === "anniversary" ? `${n} años` : `cumple ${n}`;
+}
+
 function label(m: Moment) {
   if (m.on_date) {
     const [y, mo, d] = m.on_date.split("-").map(Number);
     return `${d} de ${MONTHS[mo - 1]} de ${y}`;
   }
-  return `${m.day} de ${MONTHS[(m.month || 1) - 1]}`;
+  return `${m.day} de ${MONTHS[(m.month || 1) - 1]}${m.year ? " de " + m.year : ""}`;
 }
 
 // Months and days mixed into one sortable key: what the house reads calendar-wise.
@@ -56,6 +69,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
   const [month, setMonth] = useState(String(new Date().getMonth() + 1));
   const [day, setDay] = useState("");
   const [onDate, setOnDate] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [who, setWho] = useState("any");
 
   const sorted = useMemo(() => [...rows].sort((a, b) => key(a).localeCompare(key(b))), [rows]);
@@ -78,6 +92,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
     if (yearly) {
       body.month = Number(month);
       body.day = Number(day);
+      if (birthYear.trim()) body.year = Number(birthYear);
       if (!body.day) {
         setErr("Faltó el día.");
         return;
@@ -107,6 +122,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
     setTitle("");
     setDay("");
     setOnDate("");
+    setBirthYear("");
     await reload();
   }
 
@@ -145,7 +161,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
             placeholder="¿De quién o de qué nos tenemos que acordar?"
             maxLength={120}
             aria-label="Nombre"
-            style={{ flex: "2 1 260px" }}
+            style={{ flex: "2 1 200px", minWidth: 160 }}
           />
           <label className="field ytog" title="Se repite todos los años o es una sola vez">
           <input
@@ -162,7 +178,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
                 aria-label="Mes"
-                style={{ flex: "1 1 130px" }}
+                style={{ flex: "1 1 110px", minWidth: 96 }}
               >
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>
@@ -179,7 +195,19 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
                 onChange={(e) => setDay(e.target.value)}
                 placeholder="Día"
                 aria-label="Día"
-                style={{ flex: "0 1 90px" }}
+                style={{ flex: "0 0 70px" }}
+              />
+              <input
+                className="field"
+                type="number"
+                min={1900}
+                max={new Date().getFullYear()}
+                value={birthYear}
+                onChange={(e) => setBirthYear(e.target.value)}
+                placeholder={kind === "anniversary" ? "Año (1º)" : "Año (opc.)"}
+                aria-label="Año de nacimiento o del primer aniversario"
+                title="Opcional: sirve para saber cuántos años cumple"
+                style={{ flex: "0 0 110px" }}
               />
             </>
           ) : (
@@ -197,7 +225,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
             value={who}
             onChange={(e) => setWho(e.target.value)}
             aria-label="De quién"
-            style={{ flex: "0 1 150px" }}
+            style={{ flex: "0 1 128px", minWidth: 108 }}
           >
             {WHO.map((w) => (
               <option key={w.id} value={w.id}>
@@ -205,7 +233,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
               </option>
             ))}
           </select>
-          <button className="btn" type="submit" disabled={busy || !title.trim()}>
+          <button className="btn" type="submit" disabled={busy || !title.trim()} style={{ flex: "0 0 auto" }}>
             {busy ? "Guardando…" : "Agregar"}
           </button>
         </div>
@@ -226,7 +254,7 @@ export default function MomentsEditor({ initial }: { initial: Moment[] }) {
               <div className="meta">
                 <span>{label(m)}</span>
                 <span>·</span>
-                <span>{m.on_date ? "una sola vez" : "todos los años"}</span>
+                <span>{m.on_date ? "una sola vez" : milestone(m) || "todos los años"}</span>
                 <span>·</span>
                 <span>{WHO.find((w) => w.id === m.who)?.label || "De los dos"}</span>
               </div>

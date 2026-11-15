@@ -179,7 +179,7 @@
         '<span class="ab-emoji">' + (m.kind === 'birthday' ? '🎂' : m.kind === 'anniversary' ? '💛' : '📌') + '</span>' +
         '<b>' + App.esc(m.t) + '</b>' +
         '<span class="num">' + (m.d === 0 ? 'es hoy' : m.d === 1 ? 'es mañana' : 'en ' + m.d + ' días') + '</span>' +
-        (m.inYear ? '<span class="ab-year">' + m.inYear + '</span>' : '') +
+        (m.age ? '<span class="ab-year">' + (m.kind === 'anniversary' ? m.age + ' años' : 'cumple ' + m.age) + '</span>' : '') +
         (moreM > 0 ? '<span class="ab-more">+' + moreM + '</span>' : '') +
         '</div>');
     }

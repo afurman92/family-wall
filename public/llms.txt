@@ -117,7 +117,8 @@ PATCH  /api/moments/{id}
 DELETE /api/moments/{id}
 ```
 
-- Yearly dates (birthday, anniversary): send `month` and `day`, no year.
+- Yearly dates (birthday, anniversary): send `month` and `day`. `year` is optional and
+  only exists so the wall can say "turns 35" or "12 years" — never send it with `on_date`.
 - One-off dates: send `on_date` (YYYY-MM-DD). Sending both is a 400 — pick one.
 - `kind`: `birthday` | `anniversary` | `other`. `who`: a member id or `any`.
 - These are **not** calendar events. Birthdays already in the family Google Calendar stay
