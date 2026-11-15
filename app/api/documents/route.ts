@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isoDay } from "../../../lib/dates";
 import { isKnownPerson } from "../../../lib/people";
 import { createDocument, ensureSchema, listDocuments, updateDocument } from "../../../lib/db";
 
@@ -32,11 +33,15 @@ export async function POST(req: Request) {
   const str = (v: unknown, max = 120) =>
     typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
 
-  const isoDate = (v: unknown) => {
-    if (typeof v !== "string" || !v.trim()) return null;
-    const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
-  };
+  // undefined means "I could not read that", which is an error, not an empty field.
+  const isoDate = (v: unknown) => isoDay(v);
+
+  if (isoDate(body?.issued_on) === undefined) {
+    return NextResponse.json({ error: "issued_on must be a real date (YYYY-MM-DD)" }, { status: 400 });
+  }
+  if (isoDate(body?.expires_on) === undefined) {
+    return NextResponse.json({ error: "expires_on must be a real date (YYYY-MM-DD)" }, { status: 400 });
+  }
 
   if (!str(body?.country) && !str(body?.doc_type)) {
     return NextResponse.json(

@@ -43,10 +43,26 @@ function connectionString(): string | null {
   return best ? process.env[best] ?? null : null;
 }
 
+// Vercel runs in UTC. "Today" for this house is not UTC: a chore ticked at 19:30
+// in Toronto is already tomorrow in UTC, so a daily chore would un-tick itself
+// every evening and a birthday would flip a day early. Every connection carries
+// the household's zone so CURRENT_DATE, date_trunc and now() agree with the wall.
+const HOME_TZ =
+  /^[A-Za-z][A-Za-z0-9_+\-/]{2,40}$/.test(process.env.FAMILY_TZ || "")
+    ? (process.env.FAMILY_TZ as string)
+    : "America/Toronto";
+
 export function db(): VercelPool | null {
   const cs = connectionString();
   if (!cs) return null;
-  if (!pool) pool = createPool({ connectionString: cs, max: 3 });
+  if (!pool) {
+    pool = createPool({ connectionString: cs, max: 3 });
+    pool.on("connect", (client: any) => {
+      client.query(`SET TIME ZONE '${HOME_TZ}'`).catch((e: unknown) => {
+        console.warn("[db] could not set time zone", e instanceof Error ? e.message : e);
+      });
+    });
+  }
   return pool;
 }
 
@@ -674,6 +690,13 @@ export async function createMoment(m: {
   return rows[0] ?? null;
 }
 
+export async function getMoment(id: number): Promise<Moment | null> {
+  const p = db();
+  if (!p) return null;
+  const { rows } = await p.query<Moment>(`SELECT * FROM moments WHERE id = $1 AND deleted_at IS NULL`, [id]);
+  return rows[0] ?? null;
+}
+
 export async function updateMoment(
   id: number,
   patch: Partial<Pick<Moment, "title" | "kind" | "month" | "day" | "year" | "note" | "on_date" | "who">>
@@ -719,17 +742,26 @@ export async function deleteMoment(id: number, by?: string | null): Promise<bool
 export async function upcomingMoments(withinDays = 30): Promise<UpcomingMoment[]> {
   const p = db();
   if (!p) return [];
+  // Feb 29 has no make_date() in a common year and would take the whole query —
+  // and the wall with it — down with a 500. Interval arithmetic rolls it to
+  // March 1 instead, which is what a family actually celebrates.
   const { rows } = await p.query<UpcomingMoment>(
-    `WITH next_day AS (
+    `WITH base AS (
        SELECT m.*,
-              CASE WHEN m.on_date IS NOT NULL THEN m.on_date
-                   ELSE make_date(
-                     EXTRACT(YEAR FROM CURRENT_DATE)::int
-                       + CASE WHEN make_date(EXTRACT(YEAR FROM CURRENT_DATE)::int, m.month, m.day) < CURRENT_DATE
-                              THEN 1 ELSE 0 END,
-                     m.month, m.day)
-              END AS next_on
+              (date_trunc('year', CURRENT_DATE)::date
+               + (m.month - 1) * INTERVAL '1 month'
+               + (m.day - 1) * INTERVAL '1 day')::date AS this_year_on
          FROM moments m
+        WHERE m.deleted_at IS NULL
+     ),
+     next_day AS (
+       SELECT b.*,
+              CASE WHEN b.on_date IS NOT NULL THEN b.on_date
+                   WHEN b.this_year_on < CURRENT_DATE
+                        THEN (b.this_year_on + INTERVAL '1 year')::date
+                   ELSE b.this_year_on
+              END AS next_on
+         FROM base b
      )
      SELECT id, title, kind, month, day, year, note,
             to_char(on_date,'YYYY-MM-DD') AS on_date, who, created_by, created_at,
@@ -737,8 +769,7 @@ export async function upcomingMoments(withinDays = 30): Promise<UpcomingMoment[]
             EXTRACT(YEAR FROM next_on)::int AS in_year,
             CASE WHEN year IS NOT NULL THEN EXTRACT(YEAR FROM next_on)::int - year END AS age
        FROM next_day
-      WHERE deleted_at IS NULL
-        AND (next_on - CURRENT_DATE) BETWEEN 0 AND $1::int
+      WHERE (next_on - CURRENT_DATE) BETWEEN 0 AND $1::int
       ORDER BY next_on ASC`,
     [withinDays]
   );

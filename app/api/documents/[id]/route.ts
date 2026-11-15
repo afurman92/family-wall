@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isKnownPerson } from "../../../../lib/people";
+import { isoDay } from "../../../../lib/dates";
 import { del } from "@vercel/blob";
 import { deleteDocument, ensureSchema, getDocument, updateDocument } from "../../../../lib/db";
 
@@ -32,12 +33,16 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (v === null || v === "") return null;
     return typeof v === "string" ? v.trim().slice(0, max) || null : undefined;
   };
-  const isoDate = (v: unknown) => {
-    if (v === null || v === "") return null;
-    if (typeof v !== "string") return undefined;
-    const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10);
-  };
+  // undefined = the caller sent something that is not a date: answer 400
+  // instead of quietly keeping the old value.
+  const isoDate = (v: unknown) => isoDay(v);
+
+  if ("issued_on" in (body || {}) && isoDate(body.issued_on) === undefined) {
+    return NextResponse.json({ error: "issued_on must be a real date (YYYY-MM-DD)" }, { status: 400 });
+  }
+  if ("expires_on" in (body || {}) && isoDate(body.expires_on) === undefined) {
+    return NextResponse.json({ error: "expires_on must be a real date (YYYY-MM-DD)" }, { status: 400 });
+  }
 
   const patch: Record<string, string | null> = {};
   const put = (key: string, val: string | null | undefined) => {

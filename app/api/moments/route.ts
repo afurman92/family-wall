@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isKnownPerson } from "../../../lib/people";
+import { isoDay, realMonthDay } from "../../../lib/dates";
 import { createMoment, ensureSchema, listMoments, upcomingMoments } from "../../../lib/db";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +49,14 @@ export async function POST(req: Request) {
   const title = typeof body?.title === "string" ? body.title.trim().slice(0, 120) : "";
   if (!title) return NextResponse.json({ error: "title is required" }, { status: 400 });
 
-  const kind = typeof body?.kind === "string" && KINDS.includes(body.kind) ? body.kind : "birthday";
+  const kindRaw = body?.kind === undefined ? "birthday" : body.kind;
+  if (typeof kindRaw !== "string" || !KINDS.includes(kindRaw)) {
+    return NextResponse.json(
+      { error: `kind must be one of ${KINDS.join(", ")}` },
+      { status: 400 }
+    );
+  }
+  const kind = kindRaw;
 
   // Yearly dates (birthday, anniversary) take month + day; a one-off date takes
   // a full date. Sending both is a mistake worth reporting, not guessing past.
@@ -81,8 +89,14 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  if (onDate && !/^\d{4}-\d{2}-\d{2}$/.test(onDate)) {
-    return NextResponse.json({ error: "on_date must be YYYY-MM-DD" }, { status: 400 });
+  if (onDate && isoDay(onDate) === undefined) {
+    return NextResponse.json({ error: "on_date must be a real date (YYYY-MM-DD)" }, { status: 400 });
+  }
+  if (!onDate && month !== null && day !== null && !realMonthDay(month, day)) {
+    return NextResponse.json(
+      { error: `${day}/${month} does not exist; check the month and the day` },
+      { status: 400 }
+    );
   }
 
   const moment = await createMoment({
