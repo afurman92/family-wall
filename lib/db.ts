@@ -372,6 +372,13 @@ export async function updateDocument(
   return rows[0] ?? null;
 }
 
+export async function deleteDocument(id: number): Promise<boolean> {
+  const p = db();
+  if (!p) throw new Error("no database");
+  const { rowCount } = await p.query(`DELETE FROM documents WHERE id = $1`, [id]);
+  return (rowCount ?? 0) > 0;
+}
+
 export async function createDocument(input: {
   country?: string | null;
   doc_type?: string | null;

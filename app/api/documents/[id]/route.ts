@@ -1,0 +1,85 @@
+import { NextResponse } from "next/server";
+import { del } from "@vercel/blob";
+import { deleteDocument, ensureSchema, getDocument, updateDocument } from "../../../../lib/db";
+
+export const dynamic = "force-dynamic";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+async function idFrom(ctx: Ctx) {
+  const { id: raw } = await ctx.params;
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+export async function PATCH(req: Request, ctx: Ctx) {
+  const who = req.headers.get("x-member");
+  if (!who) return NextResponse.json({ error: "authentication required" }, { status: 401 });
+  if (!(await ensureSchema())) return NextResponse.json({ error: "no database" }, { status: 503 });
+
+  const id = await idFrom(ctx);
+  if (!id) return NextResponse.json({ error: "invalid id" }, { status: 400 });
+
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid json" }, { status: 400 });
+  }
+
+  const str = (v: unknown, max = 120) => {
+    if (v === null || v === "") return null;
+    return typeof v === "string" ? v.trim().slice(0, max) || null : undefined;
+  };
+  const isoDate = (v: unknown) => {
+    if (v === null || v === "") return null;
+    if (typeof v !== "string") return undefined;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10);
+  };
+
+  const patch: Record<string, string | null> = {};
+  const put = (key: string, val: string | null | undefined) => {
+    if (val !== undefined) patch[key] = val;
+  };
+  put("country", str(body?.country, 60));
+  put("doc_type", str(body?.doc_type, 60));
+  put("number", str(body?.number, 60));
+  put("issued_on", isoDate(body?.issued_on));
+  put("expires_on", isoDate(body?.expires_on));
+  put("owner", str(body?.owner, 40));
+  put("note", str(body?.note, 500));
+
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ error: "nothing to update" }, { status: 400 });
+  }
+
+  const document = await updateDocument(id, patch as never);
+  if (!document) return NextResponse.json({ error: "not found" }, { status: 404 });
+  return NextResponse.json({ document });
+}
+
+export async function DELETE(req: Request, ctx: Ctx) {
+  const who = req.headers.get("x-member");
+  if (!who) return NextResponse.json({ error: "authentication required" }, { status: 401 });
+  if (!(await ensureSchema())) return NextResponse.json({ error: "no database" }, { status: 503 });
+
+  const id = await idFrom(ctx);
+  if (!id) return NextResponse.json({ error: "invalid id" }, { status: 400 });
+
+  const doc = await getDocument(id);
+  if (!doc) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const gone = await deleteDocument(id);
+
+  // The row is gone; the scan should not outlive it.
+  if (gone && doc.file_url) {
+    try {
+      await del(doc.file_url);
+    } catch (e) {
+      console.warn("[documents] could not delete blob", e instanceof Error ? e.message : e);
+    }
+  }
+
+  return NextResponse.json({ deleted: gone, id });
+}

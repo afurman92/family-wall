@@ -599,3 +599,165 @@ a { color: var(--ink); }
 }
 .group-label:first-of-type { margin-top: 2px; }
 .field--sm { min-height: 38px; padding: 8px 12px; font-size: 14px; margin-bottom: 10px; }
+
+/* ---- Air fryer: one grid on desktop, stacked cards on a phone ---------- */
+.af-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.2fr) 140px 84px 84px 96px auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+.af-thead {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.2fr) 130px 70px 70px 80px 32px;
+  gap: 10px;
+  padding: 0 0 8px;
+  border-bottom: 2px solid var(--ink);
+}
+.af-row2 {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.2fr) 130px 70px 70px 80px 32px;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 720px) {
+  .af-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .af-form > label:first-child,
+  .af-form > button {
+    grid-column: 1 / -1;
+  }
+  .af-form > button {
+    width: 100%;
+  }
+  .af-thead {
+    display: none;
+  }
+  .af-row2 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    position: relative;
+    padding: 14px 28px 14px 0;
+  }
+  .af-row2 > .af-ing {
+    flex: 1 0 100%;
+  }
+  .af-row2 > .af-del {
+    position: absolute;
+    right: 0;
+    top: 12px;
+  }
+  .af-cell {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .af-cell::before {
+    content: attr(data-label);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+}
+
+/* ============================================================ documents */
+.doc-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+.doc-form > button { grid-column: 4; }
+
+.doc-head,
+.doc-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.9fr) 1fr 104px 90px 84px auto;
+  gap: 12px;
+  align-items: center;
+}
+.doc-head {
+  padding: 0 0 8px;
+  border-bottom: 2px solid var(--ink);
+}
+.doc-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.doc-row--edit {
+  display: block;
+  background: var(--paper-2);
+  border-radius: var(--r-s);
+  padding: 14px;
+  margin: 6px 0;
+  border-bottom: none;
+}
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.doc-name { display: block; font-size: 16px; line-height: 1.3; }
+.doc-name b { font-weight: 700; }
+.doc-name small { display: block; font-size: 12.5px; color: var(--mute); margin-top: 2px; line-height: 1.35; }
+.doc-cell { font-size: 15px; }
+.doc-cell b { display: block; font-weight: 800; }
+.doc-cell small { display: block; font-size: 12px; font-weight: 500; opacity: 0.75; }
+.doc-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.doc-actions .btn { padding: 8px 14px; min-height: 36px; font-size: 13.5px; }
+.btn--ghost { background: transparent; border: 1px solid var(--line); color: var(--mute); }
+.btn--ghost:hover { color: var(--ink); border-color: var(--ink-2); }
+.doc-upload {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13.5px;
+  color: var(--mute);
+  cursor: pointer;
+}
+.doc-upload:hover { color: var(--ink); border-color: var(--ink-2); }
+.doc-upload input { display: none; }
+
+@media (max-width: 720px) {
+  .doc-form { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .doc-form > label:nth-child(1),
+  .doc-form > label:nth-child(2),
+  .doc-form > button { grid-column: 1 / -1; }
+  .doc-form > button { width: 100%; }
+  .doc-grid { grid-template-columns: 1fr; }
+  .doc-head { display: none; }
+  .doc-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    padding: 14px 0;
+  }
+  .doc-name { flex: 1 0 100%; }
+  .doc-cell {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 14px;
+  }
+  .doc-cell::before {
+    content: attr(data-label);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+  .doc-actions { flex: 1 0 100%; justify-content: flex-start; }
+}

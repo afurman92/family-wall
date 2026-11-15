@@ -94,16 +94,7 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
 
   return (
     <div>
-      <form
-        onSubmit={add}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(180px, 2.2fr) 140px 84px 84px 96px auto",
-          gap: 10,
-          alignItems: "end",
-          marginBottom: 22,
-        }}
-      >
+      <form onSubmit={add} className="af-form">
         <label style={{ display: "grid", gap: 6 }}>
           <span style={head}>Ingrediente</span>
           <input
@@ -182,15 +173,7 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
         <div className="empty">Todavía no hay datos. Agregá el primero arriba.</div>
       ) : (
         <div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(180px, 2.2fr) 130px 70px 70px 80px 32px",
-              gap: 10,
-              padding: "0 0 8px",
-              borderBottom: "2px solid #111111",
-            }}
-          >
+          <div className="af-thead">
             <span style={head}>Ingrediente</span>
             <span style={head}>Modo</span>
             <span style={head}>Porción</span>
@@ -199,18 +182,8 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
             <span />
           </div>
           {rows.map((r) => (
-            <div
-              key={r.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(180px, 2.2fr) 130px 70px 70px 80px 32px",
-                gap: 10,
-                alignItems: "center",
-                padding: "12px 0",
-                borderBottom: "1px solid #E4DED2",
-              }}
-            >
-              <span style={{ fontSize: 16.5 }}>
+            <div key={r.id} className="af-row2">
+              <span className="af-ing" style={{ fontSize: 16.5 }}>
                 {r.ingredient}
                 {r.note ? (
                   <span style={{ display: "block", fontSize: 12.5, color: "#7A756B", marginTop: 2, lineHeight: 1.35 }}>
@@ -218,15 +191,16 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
                   </span>
                 ) : null}
               </span>
-              <span style={{ fontSize: 15, color: "#3B3934", fontWeight: 600 }}>{r.mode || "—"}</span>
-              <span style={{ fontSize: 16, color: "#7A756B" }}>{r.servings}</span>
-              <span style={{ fontSize: 16, color: "#7A756B" }}>
+              <span className="af-cell" data-label="Modo" style={{ fontSize: 15, color: "#3B3934", fontWeight: 600 }}>{r.mode || "—"}</span>
+              <span className="af-cell" data-label="Porción" style={{ fontSize: 16, color: "#7A756B" }}>{r.servings}</span>
+              <span className="af-cell" data-label="Tiempo" style={{ fontSize: 16, color: "#7A756B" }}>
                 {r.minutes != null ? `${r.minutes} min` : "—"}
               </span>
-              <span style={{ fontSize: 16, color: "#7A756B" }}>
+              <span className="af-cell" data-label="Temp" style={{ fontSize: 16, color: "#7A756B" }}>
                 {r.temp_f != null ? `${r.temp_f}°F` : "—"}
               </span>
               <button
+                className="af-del"
                 onClick={() => remove(r.id)}
                 aria-label={`Borrar ${r.ingredient}`}
                 style={{
