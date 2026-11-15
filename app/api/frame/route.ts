@@ -46,6 +46,7 @@ export async function GET(req: Request) {
         title: c.title,
         who: c.who,
         routine: c.routine,
+        freq: c.freq,
         done: c.done,
       })),
     },

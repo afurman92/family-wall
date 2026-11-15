@@ -99,3 +99,7 @@ Restart the Android app after a deploy (`adb shell am force-stop <pkg> && am sta
 - **Dark mode follows sunset, not the clock.** `App.isNight()` reads `sunrise`/`sunset` from the
   weather payload and falls back to 22:00–06:00.
 - **Never `rm -rf public/app`.** Move the old build aside first; rollback takes a second.
+
+## Adding a database column
+
+`ensureSchema()` in `lib/db.ts` is the only migration path — add an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` next to the table's `CREATE`. Then check the places that re-map rows explicitly: **`app/api/frame/route.ts` builds its payload field by field**, so a new column silently never reaches the wall unless you add it there too.

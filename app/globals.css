@@ -79,7 +79,11 @@ a { color: var(--ink); }
   white-space: nowrap;
 }
 @media (max-width: 700px) {
-  .shell-head { flex-wrap: wrap; gap: 10px; }
+  .shell-head { flex-wrap: wrap; gap: 8px 10px; }
+  .brand { flex-basis: 100%; font-size: 24px; }
+  .nav { order: 2; flex-basis: 100%; flex-wrap: wrap; gap: 2px; margin-left: -10px; }
+  .nav { gap: 0; }
+  .nav a { padding: 7px 9px; font-size: 12.5px; }
   .shell-date { order: 3; flex-basis: 100%; }
 }
 
@@ -760,4 +764,79 @@ a { color: var(--ink); }
     color: var(--mute);
   }
   .doc-actions { flex: 1 0 100%; justify-content: flex-start; }
+}
+
+/* ============================================================ chores */
+.chore-form {
+  display: grid;
+  grid-template-columns: minmax(190px, 2fr) 148px 132px 132px auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+.chore-lanes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+}
+.chore-lane {
+  border-top: 3px solid var(--line);
+  padding-top: 12px;
+}
+.chore-lane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.chore-lane-head .dot { width: 10px; height: 10px; border-radius: 50%; }
+.chore-count { margin-left: auto; font-size: 12.5px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.chore-empty { font-size: 13.5px; color: var(--mute); padding: 6px 0; }
+.chore-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.chore-row--edit {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 0;
+}
+.chore-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  color: var(--paper);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.chore-row.is-done .chore-check { background: var(--ok); border-color: var(--ok); }
+.chore-row.is-done .chore-title { text-decoration: line-through; color: var(--mute); }
+.chore-title { font-size: 15px; }
+.chore-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.chore-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.chore-actions .btn { padding: 7px 12px; min-height: 32px; font-size: 13px; }
+
+@media (max-width: 720px) {
+  .chore-form { grid-template-columns: 1fr 1fr; }
+  .chore-form > label:first-child { grid-column: 1 / -1; }
+  .chore-form > button { grid-column: 1 / -1; width: 100%; }
+  .chore-row { grid-template-columns: 24px minmax(0, 1fr) auto; }
 }

@@ -159,6 +159,7 @@ async function refresh() {
         title: c.title,
         who: c.who || 'any',
         r: c.routine || 'any',
+        freq: c.freq || 'daily',
         emoji: emojiFor(c.title),
         done: !!c.done,
         overdue: false

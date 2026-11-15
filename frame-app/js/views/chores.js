@@ -3,11 +3,14 @@
   'use strict';
   var D = window.DATA;
   var V = { el: null, routine: null, pending: {} };
-  var LANES = ['alex', 'jordan', 'maya', 'otto', 'any'];
+  function lanes() {
+    var people = (D.people || []).map(function (p) { return p.id; });
+    return people.concat(['any']);
+  }
 
   function routine() { return V.routine ? D.routines.filter(function (r) { return r.id === V.routine; })[0] : App.currentRoutine(); }
   function listFor(who, r) {
-    return D.chores.filter(function (c) { return c.r === r.id && c.who === who; })
+    return D.chores.filter(function (c) { return (c.r === r.id || c.r === 'any') && c.who === who; })
       .sort(function (a, b) { return (a.done - b.done) || ((b.overdue ? 1 : 0) - (a.overdue ? 1 : 0)); });
   }
 
@@ -16,7 +19,7 @@
     return '<button class="ch' + (c.done ? ' is-done' : '') + (pend ? ' is-checking' : '') + (c.overdue && !c.done ? ' is-overdue' : '') + '" data-ch="' + c.id + '">' +
       '<span class="ch-emoji">' + c.emoji + '<span class="ch-check"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></span>' +
       '<span class="ch-text"><b>' + App.esc(c.title) + '</b>' +
-      (c.overdue && !c.done ? '<small class="ch-late">Overdue</small>' : c.stars ? '<small>' + App.icon('star', 14, 'i--fill') + c.stars + (c.doneBy ? ' · ' + App.person(c.doneBy).name : '') + '</small>' : (c.doneBy ? '<small>by ' + App.person(c.doneBy).name + '</small>' : '')) +
+      (c.overdue && !c.done ? '<small class="ch-late">Overdue</small>' : c.stars ? '<small>' + App.icon('star', 14, 'i--fill') + c.stars + (c.doneBy ? ' · ' + App.person(c.doneBy).name : '') + '</small>' : (c.doneBy ? '<small>by ' + App.person(c.doneBy).name + '</small>' : (c.freq && c.freq !== 'daily' ? '<small>' + (c.freq === 'weekly' ? 'semanal' : 'mensual') + '</small>' : ''))) +
       '</span>' +
       '</button>';
   }
@@ -58,7 +61,7 @@
       '<div class="seg">' + D.routines.map(function (x) { return '<button class="' + (x.id === r.id ? 'is-on' : '') + '" data-r="' + x.id + '">' + x.name + '</button>'; }).join('') + '</div>' +
       '<div class="t-progress"><span class="num">' + done + '<small>/' + inR.length + '</small></span><div class="t-bar"><i style="width:' + (inR.length ? done / inR.length * 100 : 0) + '%"></i></div><span class="label">done</span></div>' +
       '</header>' +
-      '<div class="ch-lanes">' + LANES.map(function (w) { return lane(w, r); }).join('') + '</div>' +
+      '<div class="ch-lanes">' + lanes().map(function (w) { return lane(w, r); }).join('') + '</div>' +
       '</div>';
   }
 
@@ -115,21 +118,8 @@
   function onClick(e) {
     var t;
     if ((t = e.target.closest('[data-r]'))) { V.routine = t.dataset.r === App.currentRoutine().id ? null : t.dataset.r; return render(); }
-    if ((t = e.target.closest('[data-ch]'))) {
-      var c = D.chores.filter(function (x) { return x.id === t.dataset.ch; })[0];
-      if (!c || V.pending[c.id]) return;
-      if (c.done) {
-        c.done = false;
-        var earner = D.stars[c.who] != null ? c.who : (c.doneBy && D.stars[c.doneBy] != null ? c.doneBy : null);
-        if (earner && c.stars) D.stars[earner] -= c.stars;
-        delete c.doneBy;
-        render();
-        App.emit('data');
-        return;
-      }
-      if (c.who === 'any') return whoDidIt(c, t);
-      complete(c, t);
-    }
+    // Chores on the wall are a reading, not a checkbox: the frame cannot write.
+    return;
   }
 
   App.register('chores', {

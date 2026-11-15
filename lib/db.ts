@@ -146,6 +146,8 @@ export async function ensureSchema(): Promise<boolean> {
     )
   `);
   await p.query(`CREATE INDEX IF NOT EXISTS chores_who_idx ON chores (who, routine)`);
+  // daily | weekly | monthly. A chore is "done" for its whole period, not just today.
+  await p.query(`ALTER TABLE chores ADD COLUMN IF NOT EXISTS freq TEXT NOT NULL DEFAULT 'daily'`);
 
   schemaReady = true;
   return true;
@@ -504,6 +506,7 @@ export type Chore = {
   title: string;
   who: string;
   routine: "morning" | "after" | "evening" | "any";
+  freq: "daily" | "weekly" | "monthly";
   emoji: string | null;
   done_on: string | null;
   done: boolean;
@@ -515,8 +518,11 @@ export async function listChores(): Promise<Chore[]> {
   const p = db();
   if (!p) return [];
   const { rows } = await p.query<Chore>(
-    `SELECT id, title, who, routine, emoji, done_on,
-            (done_on IS NOT NULL AND done_on = CURRENT_DATE) AS done,
+    `SELECT id, title, who, routine, freq, emoji, done_on,
+            (done_on IS NOT NULL AND done_on >= CASE freq
+                WHEN 'weekly' THEN date_trunc('week', CURRENT_DATE)::date
+                WHEN 'monthly' THEN date_trunc('month', CURRENT_DATE)::date
+                ELSE CURRENT_DATE END) AS done,
             created_by, created_at
        FROM chores
       ORDER BY who, routine, lower(title)`
@@ -528,23 +534,24 @@ export async function createChore(input: {
   title: string;
   who?: string | null;
   routine?: string | null;
+  freq?: string | null;
   emoji?: string | null;
   created_by: string;
 }): Promise<Chore> {
   const p = db();
   if (!p) throw new Error("no database");
   const { rows } = await p.query<Chore>(
-    `INSERT INTO chores (title, who, routine, emoji, created_by)
-     VALUES ($1, COALESCE($2,'any'), COALESCE($3,'any'), $4, $5)
-     RETURNING id, title, who, routine, emoji, done_on, false AS done, created_by, created_at`,
-    [input.title, input.who ?? null, input.routine ?? null, input.emoji ?? null, input.created_by]
+    `INSERT INTO chores (title, who, routine, freq, emoji, created_by)
+     VALUES ($1, COALESCE($2,'any'), COALESCE($3,'any'), COALESCE($4,'daily'), $5, $6)
+     RETURNING id, title, who, routine, freq, emoji, done_on, false AS done, created_by, created_at`,
+    [input.title, input.who ?? null, input.routine ?? null, input.freq ?? null, input.emoji ?? null, input.created_by]
   );
   return rows[0];
 }
 
 export async function updateChore(
   id: number,
-  patch: { title?: string; who?: string; routine?: string; done?: boolean }
+  patch: { title?: string; who?: string; routine?: string; freq?: string; done?: boolean }
 ): Promise<Chore | null> {
   const p = db();
   if (!p) throw new Error("no database");
@@ -553,15 +560,21 @@ export async function updateChore(
   if (patch.title !== undefined) { sets.push(`title = $${sets.length + 1}`); vals.push(patch.title); }
   if (patch.who !== undefined) { sets.push(`who = $${sets.length + 1}`); vals.push(patch.who); }
   if (patch.routine !== undefined) { sets.push(`routine = $${sets.length + 1}`); vals.push(patch.routine); }
+  if (patch.freq !== undefined) { sets.push(`freq = $${sets.length + 1}`); vals.push(patch.freq); }
   if (patch.done !== undefined) {
     sets.push(patch.done ? `done_on = CURRENT_DATE` : `done_on = NULL`);
   }
   if (!sets.length) return null;
   vals.push(id);
+  // id is always the last parameter: `done` adds a SET clause with no value of
+  // its own, so counting SET clauses would misalign the placeholders.
   const { rows } = await p.query<Chore>(
-    `UPDATE chores SET ${sets.join(", ")} WHERE id = $${sets.length + 1}
-     RETURNING id, title, who, routine, emoji, done_on,
-               (done_on IS NOT NULL AND done_on = CURRENT_DATE) AS done, created_by, created_at`,
+    `UPDATE chores SET ${sets.join(", ")} WHERE id = $${vals.length}
+     RETURNING id, title, who, routine, freq, emoji, done_on,
+               (done_on IS NOT NULL AND done_on >= CASE freq
+                   WHEN 'weekly' THEN date_trunc('week', CURRENT_DATE)::date
+                   WHEN 'monthly' THEN date_trunc('month', CURRENT_DATE)::date
+                   ELSE CURRENT_DATE END) AS done, created_by, created_at`,
     vals
   );
   return rows[0] ?? null;
