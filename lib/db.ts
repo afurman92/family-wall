@@ -110,7 +110,7 @@ export async function ensureSchema(): Promise<boolean> {
   // can say "turns 35", and an anniversary "12 years".
   await p.query(`ALTER TABLE moments ADD COLUMN IF NOT EXISTS year SMALLINT`);
 
-  // Recipes and plants carried over from Notion. `body` keeps the original block
+  // Recipes carried over from Notion. `body` keeps the original block
   // order so a recipe renders the way it was written, not as flattened text.
   await p.query(`
     CREATE TABLE IF NOT EXISTS recipes (
@@ -125,17 +125,6 @@ export async function ensureSchema(): Promise<boolean> {
     )
   `);
   await p.query(`CREATE INDEX IF NOT EXISTS recipes_cat_idx ON recipes (category, title)`);
-
-  await p.query(`
-    CREATE TABLE IF NOT EXISTS plants (
-      id           BIGSERIAL PRIMARY KEY,
-      name         TEXT NOT NULL,
-      location     TEXT,
-      care         TEXT,
-      image_url    TEXT,
-      created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `);
 
   // Air fryer cheat sheet: one row per ingredient + portion size.
   await p.query(`
@@ -225,59 +214,6 @@ export async function createRecipe(input: {
     ]
   );
   return rows[0];
-}
-
-export type Plant = {
-  id: number; name: string; location: string | null; care: string | null; image_url: string | null;
-};
-
-export async function listPlants(): Promise<Plant[]> {
-  const p = db();
-  if (!p) return [];
-  const { rows } = await p.query<Plant>(
-    `SELECT id, name, location, care, image_url FROM plants ORDER BY id ASC`
-  );
-  return rows;
-}
-
-export async function createPlant(input: {
-  name: string; location?: string | null; care?: string | null; image_url?: string | null;
-}): Promise<Plant> {
-  const p = db();
-  if (!p) throw new Error("no database");
-  const { rows } = await p.query<Plant>(
-    `INSERT INTO plants (name, location, care, image_url) VALUES ($1,$2,$3,$4)
-     RETURNING id, name, location, care, image_url`,
-    [input.name, input.location ?? null, input.care ?? null, input.image_url ?? null]
-  );
-  return rows[0];
-}
-
-// Partial update: only the keys present in `patch` are written, so callers can
-// change one field without resending the whole row.
-export async function updatePlant(
-  id: number,
-  patch: { name?: string | null; location?: string | null; care?: string | null; image_url?: string | null }
-): Promise<Plant | null> {
-  const p = db();
-  if (!p) throw new Error("no database");
-  const cols = ["name", "location", "care", "image_url"] as const;
-  const sets: string[] = [];
-  const vals: unknown[] = [];
-  for (const col of cols) {
-    if (col in patch) {
-      vals.push(patch[col] ?? null);
-      sets.push(`${col} = $${vals.length}`);
-    }
-  }
-  if (!sets.length) return null;
-  vals.push(id);
-  const { rows } = await p.query<Plant>(
-    `UPDATE plants SET ${sets.join(", ")} WHERE id = $${vals.length}
-     RETURNING id, name, location, care, image_url`,
-    vals
-  );
-  return rows[0] ?? null;
 }
 
 export type AirFryerRow = {

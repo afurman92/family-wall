@@ -16,7 +16,6 @@ Honest state of the project: what actually works, what is still a shell, and wha
   462 of 484 ingredient lines (95.5%); the rest are step references and non-quantities.
 - **Air fryer** — ingredient, mode, portion, minutes, °F, note. Modes are validated server-side
   against `AIR_FRYER_MODES` (Air Fry, Air Broil, Roast, Bake, Reheat, Dehydrate).
-- **Plants** — list with care notes and photos.
 - **Documents** — country / type / number / expiry / owner, searchable, sorted by what expires
   first; scans stream through an authenticated route, never from `public/`. Anything expired or
   expiring within 120 days shows as a strip on the wall's home screen — and only then.

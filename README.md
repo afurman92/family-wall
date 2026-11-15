@@ -18,20 +18,20 @@ Two pieces, one database:
                      │  Postgres          │
                      │  items, chores,    │
                      │  recipes, air fryer│
-                     │  documents, plants │
+                     │  documents, dates  │
                      └────────────────────┘
 ```
 
 ## What it does
 
 **On the wall (800×1280, touch):**
-- Today: agenda, weather, to-dos, shopping count, and — when a document is expired or about to
-  expire — an **expiry panel that takes the photo's place**
+- Today: agenda, weather, to-dos, chores, shopping, and — when a document is expired or a date is
+  close — an **alert strip across the top** (the strip does not exist when there is nothing)
 - Calendar: month grid, swipeable
 - Chores: one lane per person, scoped to morning / afternoon / evening, with a ring per lane.
   Read-only — the wall shows, the web edits
 - To do, kept separate from chores on purpose
-- Shopping list, tap to check
+- Shopping list, read-only (the wall cannot save; a tick that vanishes is worse than none)
 - Recipes that **scale** — tap 2 / 4 / 6 / 8 and every ingredient and step follows, including
   fractions, ranges (*"6 a 8 cucharadas"*) and unit conversion
 - Air fryer cheat sheet: ingredient, mode, portion, time, temperature — one glance from the counter

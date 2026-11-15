@@ -46,7 +46,8 @@ These ids are what `who` and `owner` fields expect.
 - **items** — tasks (`task`), shopping (`shop`), notes (`note`). `/api/items`
 - **chores** — recurring work, one lane per person, resets by period. `/api/chores`
 - **documents** — passports, IDs, permits, licences, with issue and expiry dates. `/api/documents`
-- **recipes**, **plants**, **air_fryer** — their own tables and endpoints
+- **moments** — birthdays, anniversaries and one-off dates. `/api/moments`
+- **recipes**, **air_fryer** — their own tables and endpoints
 - **calendar** — *not stored here*. The family Google Calendar is the source of truth, and the
   wall reads it from ICS feeds. Do not try to store events in this database: `POST /api/items`
   with `kind: "event"` is rejected on purpose and returns a hint.
@@ -132,10 +133,10 @@ GET /api/export
 
 Full JSON dump of the six tables. Use it for backups, not to read one list.
 
-## Recipes and plants
+## Recipes
 
-`GET` and `POST` on `/api/recipes` and `/api/plants`; `PATCH` on `/api/plants`.
-`/api/air-fryer` is `GET`/`POST`. These are read-mostly: if the person asks you to change
+`GET` and `POST` on `/api/recipes`. `/api/air-fryer` is `GET`/`POST`.
+These are read-mostly: if the person asks you to change
 one, read the existing row first and match its shape.
 
 ## The wall

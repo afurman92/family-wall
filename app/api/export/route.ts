@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // Scans are NOT included — the documents table carries the blob path, but the
 // bytes stay in the private Blob store. A backup of this file plus the blob
 // store is a complete backup.
-const TABLES = ["items", "chores", "documents", "recipes", "plants", "air_fryer"] as const;
+const TABLES = ["items", "chores", "documents", "moments", "recipes", "air_fryer"] as const;
 
 export async function GET() {
   if (!(await ensureSchema())) {
