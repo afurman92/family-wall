@@ -436,18 +436,31 @@ export async function createItem(input: {
 
 export async function updateItem(
   id: number,
-  patch: { done?: boolean; title?: string; detail?: string | null }
+  patch: { done?: boolean; title?: string; detail?: string | null; who?: string | null; kind?: Kind; due_at?: string | null }
 ): Promise<Item | null> {
   const p = db();
   if (!p) throw new Error("no database");
+  const sets: string[] = [];
+  const vals: any[] = [];
+  const put = (col: string, v: any) => {
+    vals.push(v);
+    sets.push(`${col} = $${vals.length}`);
+  };
+  if (patch.done !== undefined) put("done", patch.done);
+  if (patch.title !== undefined) put("title", patch.title);
+  if (patch.detail !== undefined) put("detail", patch.detail);
+  if (patch.who !== undefined) put("who", patch.who);
+  if (patch.kind !== undefined) put("kind", patch.kind);
+  if (patch.due_at !== undefined) put("due_at", patch.due_at);
+  if (!sets.length) {
+    const { rows } = await p.query<Item>(`SELECT * FROM items WHERE id = $1`, [id]);
+    return rows[0] ?? null;
+  }
+  vals.push(id);
   const { rows } = await p.query<Item>(
-    `UPDATE items SET
-       done       = COALESCE($2, done),
-       title      = COALESCE($3, title),
-       detail     = COALESCE($4, detail),
-       updated_at = now()
-     WHERE id = $1 RETURNING *`,
-    [id, patch.done ?? null, patch.title ?? null, patch.detail ?? null]
+    `UPDATE items SET ${sets.join(", ")}, updated_at = now()
+      WHERE id = $${vals.length} RETURNING *`,
+    vals
   );
   return rows[0] ?? null;
 }

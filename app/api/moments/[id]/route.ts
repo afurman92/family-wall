@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isKnownPerson } from "../../../../lib/people";
 import { deleteMoment, ensureSchema, updateMoment } from "../../../../lib/db";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if ("year" in body) patch.year = body.year === null || body.year === "" ? null : Number(body.year);
   if ("note" in body) patch.note = body.note ? String(body.note).slice(0, 240) : null;
   if ("on_date" in body) patch.on_date = body.on_date || null;
-  if (typeof body?.who === "string") patch.who = body.who.slice(0, 40);
+  if (typeof body?.who === "string") {
+    const w = body.who.slice(0, 40);
+    if (!isKnownPerson(w)) {
+      return NextResponse.json({ error: `unknown person: ${w}`, hint: "use alex, jordan, maya or any" }, { status: 400 });
+    }
+    patch.who = w;
+  }
 
   const moment = await updateMoment(id, patch);
   if (!moment) return NextResponse.json({ error: "not found or nothing to change" }, { status: 404 });

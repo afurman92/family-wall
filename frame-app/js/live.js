@@ -102,6 +102,11 @@ async function refresh() {
 
   var data = await res.json();
 
+  // The demo's photos are stock images from the internet: not this family, and a
+  // screen that quietly loads strangers from picsum is worse than no photo.
+  // Until real photos exist, the idle screen is the paper card it already draws.
+  D.photos = [];
+
   // ---- people: rebuild the slots from config, keeping the demo's ids so that
   // chores, stars and photos keep resolving. Ids not in config are dropped, and
   // the kid-keyed maps (chores/stars/week) are pruned to match.

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isKnownPerson } from "../../../lib/people";
 import { createItem, ensureSchema, isKind, listItems } from "../../../lib/db";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
       {
         error: "events are not stored here",
         hint:
-          "Add events to the shared calendar, which is the source of truth and what the kitchen frame reads. This endpoint stores tasks, shopping and notes only.",
+          "Add events to the 'Familia' Google Calendar, which is the source of truth and what the kitchen frame reads. This endpoint stores tasks, shopping and notes only.",
       },
       { status: 400 }
     );
@@ -72,11 +73,19 @@ export async function POST(req: Request) {
     due = d.toISOString();
   }
 
+  const ownerId = typeof body?.who === "string" && body.who.trim() ? body.who.trim() : null;
+  if (!isKnownPerson(ownerId)) {
+    return NextResponse.json(
+      { error: `unknown person: ${ownerId}`, hint: "use alex, jordan, maya or any" },
+      { status: 400 }
+    );
+  }
+
   const item = await createItem({
     kind,
     title,
     detail: typeof body?.detail === "string" ? body.detail.slice(0, 2000) : null,
-    who: typeof body?.who === "string" ? body.who.slice(0, 40) : null,
+    who: ownerId,
     due_at: due,
     created_by: who,
   });

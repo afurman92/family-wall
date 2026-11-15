@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isKnownPerson } from "../../../lib/people";
 import { createMoment, ensureSchema, listMoments, upcomingMoments } from "../../../lib/db";
 
 export const dynamic = "force-dynamic";
@@ -92,7 +93,10 @@ export async function POST(req: Request) {
     on_date: onDate,
     year,
     note: typeof body?.note === "string" && body.note.trim() ? body.note.trim().slice(0, 240) : null,
-    who: typeof body?.who === "string" ? body.who.slice(0, 40) : undefined,
+    who: (() => {
+      const w = typeof body?.who === "string" ? body.who.slice(0, 40) : "any";
+      return isKnownPerson(w) ? w : "any";
+    })(),
     created_by: who,
   });
   return NextResponse.json({ moment }, { status: 201 });

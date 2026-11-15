@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isKnownPerson } from "../../../../lib/people";
 import { del } from "@vercel/blob";
 import { deleteDocument, ensureSchema, getDocument, updateDocument } from "../../../../lib/db";
 

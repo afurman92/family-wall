@@ -9,6 +9,13 @@ export const PEOPLE: Person[] = [
   { id: "maya", name: "Maya", colour: "#00A36C" },
 ];
 
+// A `who` that is not one of these turns into a grey row nobody owns: reject it
+// at the door instead of storing a typo. `any` and null are legitimate.
+export function isKnownPerson(id: unknown): boolean {
+  return id === null || id === undefined || id === "" || id === "any" ||
+    PEOPLE.some((p) => p.id === id);
+}
+
 export const ANY: Person = { id: "any", name: "Cualquiera", colour: "#7A756B" };
 
 export const FAMILY: Person = { id: "family", name: "Family", colour: "#111111" };

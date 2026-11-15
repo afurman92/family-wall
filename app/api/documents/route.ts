@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isKnownPerson } from "../../../lib/people";
 import { createDocument, ensureSchema, listDocuments, updateDocument } from "../../../lib/db";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +51,10 @@ export async function POST(req: Request) {
     number: str(body?.number, 60),
     issued_on: isoDate(body?.issued_on),
     expires_on: isoDate(body?.expires_on),
-    owner: str(body?.owner, 40) || who,
+    owner: (() => {
+      const o = str(body?.owner, 40) || who;
+      return isKnownPerson(o) ? o : who;
+    })(),
     file_url: str(body?.file_url, 500),
     note: str(body?.note, 500),
   });
