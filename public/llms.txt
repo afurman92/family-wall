@@ -24,14 +24,25 @@ If you are a person, the app is at `/`.
 | --- | --- |
 | People | `/` — HTTP Basic, one username per member |
 | Wall tablet | `/frame/<token>` — exact token in the path, read-only, no credentials |
-| Agents | the same Basic auth as people. Every write is attributed to that member |
+| Agents | the same Basic auth as people, **or an agent key** (preferred) |
+| Browser agents | `/agent-login?k=<key>` once: sets a 30-day cookie and lets a cloud browser in |
 
 Writes need no session and no cookie: the middleware resolves the Basic user and passes
 `x-member` to the route.
 
 ```bash
+# a person
 curl -u "member:password" https://your-domain.example/api/items
+
+# an agent with a key
+curl -H "Authorization: Bearer $AGENT_KEY" https://your-domain.example/api/items
 ```
+
+**Agent keys.** If you were given a key (Muse, Hermes, any other agent), send it as
+`Authorization: Bearer <key>` or `x-agent-key: <key>`. Writes are then attributed to the agent
+(`created_by: "muse"`); set `who` to the person the agent is acting for. A browser that cannot
+answer the HTTP Basic dialog should open `/agent-login?k=<key>` once — it sets an HttpOnly cookie
+for 30 days and redirects to the app.
 
 There is no public sign-up and no API key. If you were not given a member's credentials,
 you cannot read or write anything — and guessing is not acceptable.
@@ -46,8 +57,7 @@ These ids are what `who` and `owner` fields expect.
 - **items** — tasks (`task`), shopping (`shop`), notes (`note`). `/api/items`
 - **chores** — recurring work, one lane per person, resets by period. `/api/chores`
 - **documents** — passports, IDs, permits, licences, with issue and expiry dates. `/api/documents`
-- **moments** — birthdays, anniversaries and one-off dates. `/api/moments`
-- **recipes**, **air_fryer** — their own tables and endpoints
+- **recipes**, **plants**, **air_fryer** — their own tables and endpoints
 - **calendar** — *not stored here*. The family Google Calendar is the source of truth, and the
   wall reads it from ICS feeds. Do not try to store events in this database: `POST /api/items`
   with `kind: "event"` is rejected on purpose and returns a hint.
@@ -108,23 +118,6 @@ GET    /api/documents/{id}/file     streams the scan; auth required
 - A document expired or expiring within **120 days** becomes an alert on the wall.
   Keep `expires_on` accurate; that field is what the house relies on.
 
-### Moments (dates the house must not forget)
-
-```http
-GET    /api/moments                  -> { moments: [...] }
-GET    /api/moments?within=30        -> { moments: [{ ..., days_left, in_year }] }
-POST   /api/moments                  -> 201 { moment }
-PATCH  /api/moments/{id}
-DELETE /api/moments/{id}
-```
-
-- Yearly dates (birthday, anniversary): send `month` and `day`. `year` is optional and
-  only exists so the wall can say "turns 35" or "12 years" — never send it with `on_date`.
-- One-off dates: send `on_date` (YYYY-MM-DD). Sending both is a 400 — pick one.
-- `kind`: `birthday` | `anniversary` | `other`. `who`: a member id or `any`.
-- These are **not** calendar events. Birthdays already in the family Google Calendar stay
-  there; duplicating them here would show everything twice.
-
 ### Backup
 
 ```http
@@ -133,10 +126,10 @@ GET /api/export
 
 Full JSON dump of the six tables. Use it for backups, not to read one list.
 
-## Recipes
+## Recipes and plants
 
-`GET` and `POST` on `/api/recipes`. `/api/air-fryer` is `GET`/`POST`.
-These are read-mostly: if the person asks you to change
+`GET` and `POST` on `/api/recipes` and `/api/plants`; `PATCH` on `/api/plants`.
+`/api/air-fryer` is `GET`/`POST`. These are read-mostly: if the person asks you to change
 one, read the existing row first and match its shape.
 
 ## The wall

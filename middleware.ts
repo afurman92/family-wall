@@ -11,6 +11,34 @@ import type { NextRequest } from "next/server";
 
 type Member = { name: string; pass: string };
 
+// Agents (Muse, Hermes, anything else with a key) get in without the browser's
+// password dialog, which a cloud browser cannot fill. AGENTS="muse:KEY,other:KEY".
+function agents(): { name: string; key: string }[] {
+  const raw = process.env.AGENTS;
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((pair) => pair.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const i = pair.indexOf(":");
+      return i === -1 ? null : { name: pair.slice(0, i).trim(), key: pair.slice(i + 1).trim() };
+    })
+    .filter((a): a is { name: string; key: string } => !!a && !!a.name && !!a.key);
+}
+
+function agentByKey(key: string | null | undefined): string | null {
+  if (!key) return null;
+  const hit = agents().find((a) => a.key === key);
+  return hit ? hit.name : null;
+}
+
+function readCookie(header: string | null, name: string): string | null {
+  if (!header) return null;
+  const part = header.split(";").map((p) => p.trim()).find((p) => p.startsWith(name + "="));
+  return part ? decodeURIComponent(part.slice(name.length + 1)) : null;
+}
+
 function members(): Member[] {
   const raw = process.env.MEMBERS;
   if (!raw) return [];
@@ -52,6 +80,34 @@ export function middleware(req: NextRequest) {
       return new NextResponse("Not found", { status: 404 });
     }
     return NextResponse.next();
+  }
+
+  // ---- agent door: key in a header, or a one-time link that leaves a cookie.
+  // /agent-login?k=KEY exists because a browser agent cannot answer the Basic dialog.
+  if (pathname === "/agent-login") {
+    const who = agentByKey(req.nextUrl.searchParams.get("k"));
+    if (!who) return new NextResponse("Invalid agent key", { status: 401 });
+    const res = NextResponse.redirect(new URL("/", req.url));
+    res.cookies.set("agent_key", req.nextUrl.searchParams.get("k") as string, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return res;
+  }
+
+  const auth = req.headers.get("authorization") || "";
+  const bearer = /^bearer\s+/i.test(auth) ? auth.replace(/^bearer\s+/i, "").trim() : null;
+  const headerKey = req.headers.get("x-agent-key") || bearer;
+  const agentWho =
+    agentByKey(headerKey) || agentByKey(readCookie(req.headers.get("cookie"), "agent_key"));
+
+  if (agentWho) {
+    const headers = new Headers(req.headers);
+    headers.set("x-member", agentWho);
+    return NextResponse.next({ request: { headers } });
   }
 
   // ---- item/document/recipe reads for the frame (token in the query, GET only)

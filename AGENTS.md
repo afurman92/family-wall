@@ -104,6 +104,13 @@ Restart the Android app after a deploy (`adb shell am force-stop <pkg> && am sta
 
 `ensureSchema()` in `lib/db.ts` is the only migration path — add an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` next to the table's `CREATE`. Then check the places that re-map rows explicitly: **`app/api/frame/route.ts` builds its payload field by field**, so a new column silently never reaches the wall unless you add it there too.
 
+## Agent keys
+
+`AGENTS="muse:KEY,other:KEY"` in the environment lets an agent in without the HTTP Basic dialog,
+which a cloud browser cannot fill. Two doors: `Authorization: Bearer <key>` (or `x-agent-key`)
+for API calls, and `/agent-login?k=<key>` for a browser, which sets a 30-day HttpOnly cookie.
+Writes land as `created_by: <agent>`. Rotate by changing the env var and redeploying.
+
 ## Calendar colours
 
 `lib/people.ts` → `CALENDAR_FEEDS` gives each iCal feed its own label and shade, and `CALENDAR_LANES` derives the person id from it (`all` = the family colour). There is one feed per calendar (family, personal and work for each adult); work shades are deeper than personal ones so the difference is visible at a glance. It **mirrors `LANE` in `frame-app/js/live.js`**; change both or the wall and the web paint the same event differently. The web legend on `/calendar` is built from the feeds actually configured.
