@@ -16,6 +16,18 @@ export function isKnownPerson(id: unknown): boolean {
     PEOPLE.some((p) => p.id === id);
 }
 
+// Faces live in the private Blob store, never in /public: the wall is in the
+// kitchen, the internet is not. The route streams them; this is the only map.
+export const PHOTOS: Record<string, string> = {
+  // Demo leaves these out on purpose: the household's faces belong in the
+  // private Blob store, not in a public repo. Add "alex": "avatars/alex.jpg".
+};
+
+export function photoFor(id: string | null | undefined): string | null {
+  if (!id) return null;
+  return PHOTOS[id] || null;
+}
+
 export const ANY: Person = { id: "any", name: "Cualquiera", colour: "#7A756B" };
 
 export const FAMILY: Person = { id: "family", name: "Family", colour: "#111111" };

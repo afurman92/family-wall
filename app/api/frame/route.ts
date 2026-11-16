@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { photoFor } from "../../../lib/people";
 import { getWeather } from "../../../lib/weather";
 import { expiringDocuments, listChores, listMoments, upcomingMoments } from "../../../lib/db";
 import { getEvents } from "../../../lib/calendar";
@@ -35,9 +36,14 @@ export async function GET(req: Request) {
       // and the database speak the same names.
       const legacy: Record<string, string> = { alex: "alex", jordan: "jordan", maya: "maya" };
       if (Array.isArray(parsed)) {
-        people = parsed.map((p: any) =>
-          p && typeof p.id === "string" && legacy[p.id] ? { ...p, id: legacy[p.id] } : p
-        );
+        people = parsed.map((p: any) => {
+          const id = p && typeof p.id === "string" && legacy[p.id] ? legacy[p.id] : p?.id;
+          // `photo` is a boolean, not a URL: the blob store is private and the
+          // client only needs to know whether to ask this origin for the face.
+          return p && typeof p.id === "string"
+            ? { ...p, id, photo: !!photoFor(id) }
+            : p;
+        });
       }
     } catch {
       /* ignore malformed config */

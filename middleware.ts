@@ -129,7 +129,8 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/api/documents") ||
     pathname.startsWith("/api/recipes") ||
     pathname.startsWith("/api/plants") ||
-    pathname.startsWith("/api/air-fryer")
+    pathname.startsWith("/api/air-fryer") ||
+    pathname.startsWith("/api/people/")
   ) {
     const frameTok = req.nextUrl.searchParams.get("token");
     if (
@@ -138,7 +139,9 @@ export function middleware(req: NextRequest) {
       process.env.FRAME_TOKEN &&
       frameTok === process.env.FRAME_TOKEN
     ) {
-      return NextResponse.next();
+      const headers = new Headers(req.headers);
+      headers.set("x-frame", "1");
+      return NextResponse.next({ request: { headers } });
     }
     // otherwise fall through to member auth below
   } else if (
