@@ -41,7 +41,7 @@ export async function GET(req: Request) {
           // `photo` is a boolean, not a URL: the blob store is private and the
           // client only needs to know whether to ask this origin for the face.
           return p && typeof p.id === "string"
-            ? { ...p, id, photo: !!photoFor(id) }
+            ? { ...p, id, photo: photoFor(id) }
             : p;
         });
       }

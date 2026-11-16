@@ -100,7 +100,10 @@
     // A face beats a letter, but a broken image is worse than both: the initial
     // stays underneath and only disappears once the photo has actually loaded.
     if (p && p.photo && p.id !== 'family') {
-      var src = '/api/people/' + encodeURIComponent(p.id) + '/photo' + (window.FRAME_TOKEN ? '?token=' + window.FRAME_TOKEN : '');
+      // The pathname is the version: a new crop gets a new URL, so a browser
+      // that cached yesterday's face does not keep showing it for a day.
+      var src = '/api/people/' + encodeURIComponent(p.id) + '/photo?v=' + encodeURIComponent(p.photo) +
+        (window.FRAME_TOKEN ? '&token=' + window.FRAME_TOKEN : '');
       return '<span class="avatar has-photo ' + (cls || '') + '" ' + box + '">' +
         '<img src="' + src + '" alt="' + p.name + '" onerror="this.parentNode.classList.remove(\'has-photo\')">' +
         '<b>' + p.name[0] + '</b></span>';
