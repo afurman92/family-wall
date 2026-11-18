@@ -43,12 +43,17 @@ function sortRows(rows: AirFryerRow[]): AirFryerRow[] {
 }
 
 export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
-  const [rows, setRows] = useState<AirFryerRow[]>(sortRows(initial));
+  const [rows, setRows] = useState<AirFryerRow[]>(sortRows(initial.map((r) => ({ ...r, id: Number(r.id) }))));
   const [ingredient, setIngredient] = useState("");
   const [servings, setServings] = useState(2);
   const [mode, setMode] = useState("Air Fry");
   const [minutes, setMinutes] = useState("");
   const [temp, setTemp] = useState("400");
+  const [note, setNote] = useState("");
+  // Editing happens in the same form: ✎ loads the row, Save PATCHes it. Without
+  // this the only way to change a time was delete-and-recreate, which threw the
+  // note away.
+  const [editing, setEditing] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,8 +63,8 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/air-fryer", {
-        method: "POST",
+      const res = await fetch(editing ? `/api/air-fryer/${editing}` : "/api/air-fryer", {
+        method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ingredient: ingredient.trim(),
@@ -67,19 +72,42 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
           mode,
           minutes: minutes === "" ? null : Number(minutes),
           temp_f: temp === "" ? null : Number(temp),
+          note: note.trim() || null,
         }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || "No se pudo guardar");
-      setRows((prev) => sortRows([...prev, j.row as AirFryerRow]));
+      const saved = { ...(j.row as AirFryerRow), id: Number(j.row.id) };
+      setRows((prev) => sortRows([...prev.filter((r) => r.id !== saved.id), saved]));
       setIngredient("");
       setMinutes("");
+      setNote("");
+      setEditing(null);
       // temp and servings stay: usually several items share the same setting
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar");
     } finally {
       setBusy(false);
     }
+  }
+
+  function startEdit(r: AirFryerRow) {
+    setEditing(r.id);
+    setIngredient(r.ingredient);
+    setServings(r.servings);
+    setMode(r.mode || "Air Fry");
+    setMinutes(r.minutes != null ? String(r.minutes) : "");
+    setTemp(r.temp_f != null ? String(r.temp_f) : "");
+    setNote(r.note || "");
+    setError(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setIngredient("");
+    setMinutes("");
+    setNote("");
   }
 
   async function remove(id: number) {
@@ -146,6 +174,26 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
             placeholder="400"
           />
         </label>
+        <label className="af-note" style={{ display: "grid", gap: 6 }}>
+          <span style={head}>Nota</span>
+          <input
+            style={field}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Agitar a la mitad · envolver en aluminio"
+            maxLength={200}
+          />
+        </label>
+        <div className="af-actions">
+        {editing && (
+          <button
+            type="button"
+            onClick={cancelEdit}
+            style={{ font: "inherit", fontSize: 15, padding: "11px 16px", borderRadius: 10, border: "1px solid #D6CFC0", background: "transparent", color: "#3B3934", cursor: "pointer" }}
+          >
+            Cancelar
+          </button>
+        )}
         <button
           type="submit"
           disabled={busy || !ingredient.trim()}
@@ -163,8 +211,9 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
             whiteSpace: "nowrap",
           }}
         >
-          {busy ? "…" : "Agregar"}
+          {busy ? "…" : editing ? "Guardar" : "Agregar"}
         </button>
+        </div>
       </form>
 
       {error && <div style={{ color: "#E5261E", marginBottom: 12, fontSize: 14 }}>{error}</div>}
@@ -199,6 +248,15 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
               <span className="af-cell" data-label="Temp" style={{ fontSize: 16, color: "#7A756B" }}>
                 {r.temp_f != null ? `${r.temp_f}°F` : "—"}
               </span>
+              <span style={{ display: "inline-flex", gap: 2 }}>
+              <button
+                className="af-del"
+                onClick={() => startEdit(r)}
+                aria-label={`Editar ${r.ingredient}`}
+                style={{ font: "inherit", fontSize: 15, lineHeight: 1, border: "none", background: "transparent", color: "#7A756B", cursor: "pointer", padding: 4 }}
+              >
+                ✎
+              </button>
               <button
                 className="af-del"
                 onClick={() => remove(r.id)}
@@ -216,6 +274,7 @@ export default function AirFryerPanel({ initial }: { initial: AirFryerRow[] }) {
               >
                 ✕
               </button>
+              </span>
             </div>
           ))}
         </div>

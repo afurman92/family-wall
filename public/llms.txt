@@ -135,7 +135,7 @@ should keep using `PATCH /api/chores/{id}`.
 
 ### Deleting is reversible
 
-`DELETE /api/items/{id}` (and chores, moments, documents) does **not** destroy the row: it marks
+`DELETE /api/items/{id}` (and chores, moments, documents, air-fryer) does **not** destroy the row: it marks
 `deleted_at` and the row leaves every list. It stays in the trash for 30 days.
 
 ```http
@@ -158,8 +158,16 @@ Full JSON dump of the six tables. Use it for backups, not to read one list.
 ## Recipes and plants
 
 `GET` and `POST` on `/api/recipes` and `/api/plants`; `PATCH` on `/api/plants`.
-`/api/air-fryer` is `GET`/`POST`. These are read-mostly: if the person asks you to change
-one, read the existing row first and match its shape.
+## Air fryer
+
+`GET`/`POST /api/air-fryer`, and `PATCH`/`DELETE /api/air-fryer/{id}`.
+Fields: `ingredient`, `servings` (2 or 4), `minutes`, `temp_f`, `mode`
+(Air Fry, Air Broil, Roast, Bake, Reheat, Dehydrate) and `note` (200 chars).
+
+**To change a row, PATCH it. Never delete and re-create**: that loses the `note`
+("flip halfway", "wrap in foil") and anything else you did not copy. To merge two
+duplicates, PATCH the one you keep (copy over the note you want to keep) and DELETE the
+other; the deleted one goes to /trash for 30 days.
 
 ## The wall
 

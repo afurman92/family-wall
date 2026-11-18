@@ -83,7 +83,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     return NextResponse.json({ error: "invalid id" }, { status: 400 });
   }
 
-  const ok = await deleteAirFryer(id);
+  const ok = await deleteAirFryer(id, req.headers.get("x-member"));
   if (!ok) return NextResponse.json({ error: "not found" }, { status: 404 });
   return NextResponse.json({ deleted: id });
 }

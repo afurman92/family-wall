@@ -636,16 +636,19 @@ a { color: var(--ink); }
   align-items: end;
   margin-bottom: 22px;
 }
+.af-note { grid-column: 1 / 6; }
+.af-actions { display: flex; gap: 8px; }
+.af-actions > button { flex: 1; }
 .af-thead {
   display: grid;
-  grid-template-columns: minmax(180px, 2.2fr) 130px 70px 70px 80px 32px;
+  grid-template-columns: minmax(180px, 2.2fr) 130px 70px 70px 80px 64px;
   gap: 10px;
   padding: 0 0 8px;
   border-bottom: 2px solid var(--ink);
 }
 .af-row2 {
   display: grid;
-  grid-template-columns: minmax(180px, 2.2fr) 130px 70px 70px 80px 32px;
+  grid-template-columns: minmax(180px, 2.2fr) 130px 70px 70px 80px 64px;
   gap: 10px;
   align-items: center;
   padding: 12px 0;
@@ -658,6 +661,8 @@ a { color: var(--ink); }
     gap: 8px;
   }
   .af-form > label:first-child,
+  .af-form > .af-note,
+  .af-form > .af-actions,
   .af-form > button {
     grid-column: 1 / -1;
   }

@@ -14,6 +14,7 @@ const LABEL: Record<string, string> = {
   items: "To do / Shopping",
   chores: "Chores",
   moments: "Fechas",
+  air_fryer: "Air Fryer",
   documents: "Documentos",
 };
 
@@ -21,6 +22,7 @@ const WHEN: Record<string, string> = {
   items: "Ítems",
   chores: "Chores",
   moments: "Fechas",
+  air_fryer: "Air Fryer",
   documents: "Documentos",
 };
 

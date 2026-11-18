@@ -164,6 +164,8 @@ export async function ensureSchema(): Promise<boolean> {
     )
   `);
   await p.query(`ALTER TABLE air_fryer ADD COLUMN IF NOT EXISTS mode TEXT`);
+  await p.query(`ALTER TABLE air_fryer ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+  await p.query(`ALTER TABLE air_fryer ADD COLUMN IF NOT EXISTS deleted_by TEXT`);
   await p.query(`CREATE INDEX IF NOT EXISTS air_fryer_sort_idx ON air_fryer (lower(ingredient), servings)`);
 
   // Chores are their own thing: they repeat, they belong to a person AND a part
@@ -258,6 +260,7 @@ export async function listAirFryer(): Promise<AirFryerRow[]> {
   const { rows } = await p.query<AirFryerRow>(
     `SELECT id, ingredient, servings, minutes, temp_f, mode, note
        FROM air_fryer
+      WHERE deleted_at IS NULL
       ORDER BY lower(ingredient) ASC, servings ASC`
   );
   return rows;
@@ -300,17 +303,23 @@ export async function updateAirFryer(
   if (!sets.length) return null;
   vals.push(id);
   const { rows } = await p.query<AirFryerRow>(
-    `UPDATE air_fryer SET ${sets.join(", ")} WHERE id = $${vals.length}
+    `UPDATE air_fryer SET ${sets.join(", ")} WHERE id = $${vals.length} AND deleted_at IS NULL
      RETURNING id, ingredient, servings, minutes, temp_f, mode, note`,
     vals
   );
   return rows[0] ?? null;
 }
 
-export async function deleteAirFryer(id: number): Promise<boolean> {
+// The air fryer guide was the one table where ✕ still meant gone forever: an
+// agent "replacing" a row deleted it and took its note with it. Now it goes to
+// /trash like everything else.
+export async function deleteAirFryer(id: number, by: string | null = null): Promise<boolean> {
   const p = db();
   if (!p) throw new Error("no database");
-  const r = await p.query(`DELETE FROM air_fryer WHERE id = $1`, [id]);
+  const r = await p.query(
+    `UPDATE air_fryer SET deleted_at = now(), deleted_by = $2 WHERE id = $1 AND deleted_at IS NULL`,
+    [id, by]
+  );
   return (r.rowCount ?? 0) > 0;
 }
 
@@ -789,6 +798,7 @@ const TRASH_TABLES: Record<string, string> = {
   items: "title",
   chores: "title",
   moments: "title",
+  air_fryer: "ingredient || ' · ' || servings || ' porciones'",
   documents: "COALESCE(country, '') || CASE WHEN country IS NULL OR country = '' THEN '' ELSE ' · ' END || COALESCE(doc_type, 'Documento')",
 };
 
